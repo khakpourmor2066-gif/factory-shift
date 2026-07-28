@@ -248,10 +248,10 @@ def activate_access_by_hr_identity(
 
 def format_identity_request_message(messenger_user_id: str, request_id: int | None = None) -> str:
     lines = [
-        "برای فعال‌سازی، شماره موبایل و کد کارمندی را بفرستید.",
-        "اگر دکمه ارسال شماره را می‌بینید، ابتدا شماره را ارسال کنید و سپس کد کارمندی را بفرستید.",
-        "نمونه:",
-        "ثبت 09120000002 EMP-001",
+        "برای فعال‌سازی، ابتدا شماره تلفن همراه را بفرستید.",
+        "اگر دکمه ارسال شماره را می‌بینید، همان را ارسال کنید.",
+        "بعد از دریافت شماره، کد کارمندی را جداگانه بفرستید.",
+        "نمونه مرحله دوم: EMP-001",
         f"شناسه بله شما: {messenger_user_id}",
     ]
     if request_id is not None:
@@ -279,7 +279,7 @@ def format_contact_received_message(messenger_user_id: str, request_id: int | No
     lines = [
         "شماره تلفن دریافت شد.",
         "اکنون فقط کد کارمندی را بفرستید.",
-        "نمونه دکمه/متن: EMP-001",
+        "نمونه: EMP-001",
         f"شناسه بله شما: {messenger_user_id}",
     ]
     if request_id is not None:

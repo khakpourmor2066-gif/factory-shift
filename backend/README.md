@@ -221,6 +221,15 @@ The smoke test checks:
 - admin dashboard access with a seeded supervisor user
 - a bot webhook round trip
 
+Sample employee table:
+- `backend/docs/Sample_Employees.md`
+
+Seed this sample into the database:
+
+```bash
+python tools/seed_sample_employees.py --seed-base
+```
+
 If you do not want the script to seed demo data again, omit `--run-seed`.
 
 ## Tests

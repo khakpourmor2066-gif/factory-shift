@@ -73,6 +73,22 @@ def format_bot_response(response: dict) -> str:
             "not_found": "درخواست پیدا نشد.",
         }
         return messages.get(review_status, "بررسی درخواست انجام نشد.")
+    if response_type == "identity_missing":
+        return "\n".join(
+            [
+                "برای فعال‌سازی، ابتدا شماره تلفن همراه را بفرستید.",
+                "بعد از دریافت شماره، کد کارمندی را جداگانه بفرستید.",
+                "نمونه مرحله دوم: EMP-001",
+            ]
+        )
+    if response_type == "contact_received":
+        return "\n".join(
+            [
+                "شماره تلفن دریافت شد.",
+                "اکنون فقط کد کارمندی را بفرستید.",
+                "نمونه: EMP-001",
+            ]
+        )
     if response_type == "operations_menu":
         return "\n".join(
             [

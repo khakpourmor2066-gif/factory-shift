@@ -6,6 +6,7 @@
 - Added contact-sharing activation flow for Bale.
 - Added GitHub repo workflow, templates, and release checklist.
 - Added branch protection on `main` and CI workflow for backend tests.
+- Added a production smoke test script for health, dashboard, and bot webhook verification.
 
 ## Notes
 

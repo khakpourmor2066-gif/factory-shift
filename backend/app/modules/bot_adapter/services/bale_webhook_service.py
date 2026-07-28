@@ -11,6 +11,7 @@ from app.modules.access_requests.service import (
     format_identity_not_matched_message,
     format_identity_request_message,
     extract_contact_mobile,
+    parse_identity_text,
     get_or_create_access_request,
 )
 from app.modules.bot_adapter.bale import BaleAdapter
@@ -136,6 +137,39 @@ def resolve_bale_webhook_message(db: Session, payload: dict) -> dict:
             messenger_user_id=messenger_user_id,
             text=text,
         )
+        if parse_identity_text(text) is None and activation_text == text and extract_contact_mobile(text) is None:
+            pending_request = get_or_create_access_request(
+                db,
+                platform="bale",
+                messenger_user_id=messenger_user_id,
+                latest_text=text,
+            )
+            response_text = format_identity_request_message(messenger_user_id, pending_request.id)
+            message_sent = try_send_bale_message(
+                bot_adapter,
+                messenger_user_id,
+                response_text,
+                build_contact_request_markup(),
+            )
+            create_webhook_log(
+                db,
+                platform="bale",
+                messenger_user_id=messenger_user_id,
+                direction="outgoing",
+                event_type="identity_requested",
+                request_text=text,
+                response_status="identity_missing",
+                response_text=response_text,
+                sent_status=message_sent,
+            )
+            return {
+                "ok": True,
+                "status": "identity_missing",
+                "messenger_user_id": messenger_user_id,
+                "access_request_id": pending_request.id,
+                "approval_status": "identity_missing",
+                "message_sent": message_sent,
+            }
         approved, approval_status, access_request_id = activate_access_by_hr_identity(
             db,
             platform="bale",
