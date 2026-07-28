@@ -1,6 +1,62 @@
 # Factory Shift
 
-MVP repository for the factory shift management system.
+Factory Shift is a FastAPI-based MVP for factory shift management and Bale messenger integration. It covers employee schedules, supervisor views, access requests, webhook observability, HR identity activation, and a lightweight operations dashboard.
 
-GitHub deployment is configured in `.github/workflows/liara.yaml`.
-Add `LIARA_API_TOKEN` as a repository secret before enabling CI/CD.
+## Features
+
+- Employee and supervisor shift views
+- Bale bot webhook handling
+- Access request review flow
+- HR contact plus personnel-code activation
+- Webhook logs and audit logs
+- Admin dashboard for operational status
+- Seeded demo scenarios for repeatable testing
+
+## Tech Stack
+
+- Python 3.12
+- FastAPI
+- SQLAlchemy
+- PostgreSQL
+- Docker Compose
+- Nginx
+- Bale messenger integration
+
+## Repository Layout
+
+- `backend/` application code, tests, tools, and backend docs
+- `docker-compose.yml` local development stack
+- `docker-compose.prod.yml` production runtime stack
+- `.github/workflows/` CI/CD automation
+
+## Local Development
+
+1. Install dependencies from `backend/requirements.txt`.
+2. Run the backend with the local compose stack.
+3. Execute the pytest suite before committing.
+
+## Production Notes
+
+- Production uses Docker Compose on the server.
+- The public webhook endpoint is routed through Nginx and HTTPS.
+- Runtime secrets are stored in `.env.prod` on the server, not in Git.
+
+## Testing
+
+Run the backend test suite from `backend/`:
+
+```bash
+python -m pytest -q
+```
+
+## Current Status
+
+- Main branch is tracked on GitHub.
+- The server is treated as disposable runtime state.
+- GitHub is the source of truth for code and documentation.
+
+## Future Work
+
+- Hardening the deployment pipeline
+- Adding more branch protections and PR checks
+- Expanding operational dashboards and workflow automation
