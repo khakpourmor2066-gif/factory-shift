@@ -1,0 +1,8 @@
+{
+  "app": "factory-shift-bot",
+  "platform": "docker",
+  "port": 8000,
+  "build": {
+    "location": "germany"
+  }
+}

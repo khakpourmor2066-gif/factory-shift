@@ -1,0 +1,15 @@
+﻿services:
+  postgres:
+    image: postgres:16
+    container_name: factory_shift_postgres
+    environment:
+      POSTGRES_DB: factory_shift_db
+      POSTGRES_USER: factory_shift
+      POSTGRES_PASSWORD: factory_shift
+    ports:
+      - "5432:5432"
+    volumes:
+      - factory_shift_pgdata:/var/lib/postgresql/data
+
+volumes:
+  factory_shift_pgdata:

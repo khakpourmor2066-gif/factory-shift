@@ -1,0 +1,36 @@
+عنوان: Deploy and Recovery Runbook
+تاریخ: 2026-07-28
+
+وضعیت فعلی سرور:
+- SSH با `root` و کلید `factory_shift_bale_mvp` فعال است.
+- `nginx` فعال است.
+- backend و postgres با `docker compose` بالا هستند.
+- health endpoint پاسخ `{"status":"ok"}` می‌دهد.
+- webhook Bale روی HTTPS فعال است.
+
+آدرس‌ها:
+- Health: `https://213.176.6.200.nip.io/health`
+- Bale webhook: `https://213.176.6.200.nip.io/bot/bale/webhook/<BOT_WEBHOOK_SECRET>`
+- Dashboard: `https://213.176.6.200.nip.io/admin/dashboard`
+
+Deploy sequence:
+1. `scp` فایل‌های تغییرکرده را به `/opt/factory_shift/backend` منتقل کن.
+2. `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build backend`
+3. `docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T backend python -m tools.seed_scenarios all`
+4. `curl -fsS https://213.176.6.200.nip.io/health`
+5. webhook را با payload تست کن.
+
+Recovery sequence:
+1. `docker compose -f docker-compose.prod.yml ps`
+2. `docker logs factory_shift_backend --tail 200`
+3. `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build backend`
+4. `docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T backend python -m tools.seed_access_demo`
+
+Known caveat:
+- اگر `docker compose` بدون `--env-file .env.prod` اجرا شود، warningهای `POSTGRES_PASSWORD` و `BOT_WEBHOOK_SECRET` ظاهر می‌شوند.
+- برای استقرار پایدار، همیشه از `--env-file .env.prod` استفاده شود.
+
+Next focus:
+- نگهداری HTTPS
+- نگهداری webhook
+- ثبت تغییرات در audit log و dashboard

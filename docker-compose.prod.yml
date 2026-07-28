@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: factory_shift_postgres
+    restart: unless-stopped
+    env_file:
+      - .env.prod
+    environment:
+      POSTGRES_DB: factory_shift_db
+      POSTGRES_USER: factory_shift
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - factory_shift_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U factory_shift -d factory_shift_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+    container_name: factory_shift_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env.prod
+    environment:
+      APP_NAME: Factory Shift
+      DATABASE_URL: postgresql+psycopg2://factory_shift:${POSTGRES_PASSWORD}@postgres:5432/factory_shift_db
+      SQLALCHEMY_ECHO: "false"
+      AUTO_CREATE_TABLES: "false"
+      BOT_WEBHOOK_SECRET: ${BOT_WEBHOOK_SECRET}
+      DEFAULT_BOT_PLATFORM: bale
+      BALE_BOT_TOKEN: ${BALE_BOT_TOKEN:-}
+      BALE_API_BASE_URL: https://tapi.bale.ai
+      BALE_WEBHOOK_URL: ${BALE_WEBHOOK_URL:-}
+    ports:
+      - "127.0.0.1:8000:8000"
+
+volumes:
+  factory_shift_pgdata:

@@ -1,0 +1,16 @@
+﻿from app.modules.bot_adapter.services.menu_service import get_menu_for_role
+
+
+def test_employee_menu():
+    menu = get_menu_for_role("EMPLOYEE")
+
+    assert "برنامه من" in menu
+    assert "افراد روز" not in menu
+    assert "عملیات" not in menu
+
+
+def test_supervisor_menu():
+    menu = get_menu_for_role("SUPERVISOR")
+
+    assert "افراد روز" in menu
+    assert "عملیات" in menu
