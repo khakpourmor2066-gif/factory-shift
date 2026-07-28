@@ -17,14 +17,16 @@ Deploy sequence:
 1. `scp` فایل‌های تغییرکرده را به `/opt/factory_shift/backend` منتقل کن.
 2. `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build backend`
 3. `docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T backend python -m tools.seed_scenarios all`
-4. `curl -fsS https://213.176.6.200.nip.io/health`
-5. webhook را با payload تست کن.
+4. `docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T backend python -m tools.smoke_prod --base-url http://127.0.0.1:8000 --skip-bot`
+5. `curl -fsS https://213.176.6.200.nip.io/health`
+6. webhook را با payload تست کن.
 
 Recovery sequence:
 1. `docker compose -f docker-compose.prod.yml ps`
 2. `docker logs factory_shift_backend --tail 200`
 3. `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build backend`
 4. `docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T backend python -m tools.seed_access_demo`
+5. `docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T backend python -m tools.smoke_prod --base-url http://127.0.0.1:8000 --skip-bot`
 
 Known caveat:
 - اگر `docker compose` بدون `--env-file .env.prod` اجرا شود، warningهای `POSTGRES_PASSWORD` و `BOT_WEBHOOK_SECRET` ظاهر می‌شوند.
