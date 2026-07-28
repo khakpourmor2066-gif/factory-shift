@@ -3,7 +3,9 @@
 ## Branching
 
 - `main` is the stable branch.
-- Use short-lived feature branches for new work when needed.
+- Use short-lived `feature/*` branches for new work.
+- Merge into `main` only after local tests pass.
+- Delete feature branches after merge.
 
 ## Commit format
 
@@ -22,9 +24,11 @@ Examples:
 ## Local flow
 
 1. Make the change locally.
-2. Run the relevant tests.
-3. Commit only the related files.
-4. Push to `origin/main` or a feature branch.
+2. Create a `feature/*` branch for the task.
+3. Run the relevant tests.
+4. Commit only the related files.
+5. Push the feature branch.
+6. Merge to `main` after review and verification.
 
 ## Server flow
 
@@ -38,3 +42,4 @@ Examples:
 - Keep secrets out of git.
 - Treat server state as disposable; source of truth is GitHub.
 - Use `main` as the recovery point if the server is deleted or recreated.
+- Keep server deploys tied to a known commit SHA.
