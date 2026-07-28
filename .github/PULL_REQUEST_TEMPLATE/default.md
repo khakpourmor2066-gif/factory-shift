@@ -1,21 +1,21 @@
 ## Summary
 
-Describe the issue or feature in one or two sentences.
+Describe the change and the reason for it.
 
-## Change Type
+## Scope
 
-- [ ] Bug fix
-- [ ] Feature
+- [ ] Backend code
+- [ ] Tests
 - [ ] Documentation
-- [ ] Refactor
-- [ ] Deployment
+- [ ] Deployment/runtime
 
 ## Validation
 
-- [ ] Relevant tests run
-- [ ] Local smoke test run
+- [ ] Relevant tests run locally
+- [ ] Git diff reviewed
+- [ ] No secrets or generated files staged
 - [ ] Server sync required
 
-## Notes
+## Release Notes
 
-Add links, screenshots, or context if useful.
+Summarize any user-visible impact or operational risk.
