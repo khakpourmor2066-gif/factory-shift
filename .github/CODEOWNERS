@@ -1,0 +1,7 @@
+# Default owners for review on repository changes
+* @khakpourmor2066-gif
+
+# Backend application and workflows
+/backend/ @khakpourmor2066-gif
+/.github/ @khakpourmor2066-gif
+/*.md @khakpourmor2066-gif
