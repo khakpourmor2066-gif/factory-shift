@@ -29,6 +29,14 @@ Factory Shift is a FastAPI-based MVP for factory shift management and Bale messe
 - `docker-compose.prod.yml` production runtime stack
 - `.github/workflows/` CI/CD automation
 
+## Documentation
+
+- [Development workflow](backend/docs/Development_Workflow.md)
+- [Release checklist](backend/docs/Release_Checklist.md)
+- [Release process](backend/docs/Release_Process.md)
+- [Changelog](backend/docs/Changelog.md)
+- [Contributing guide](CONTRIBUTING.md)
+
 ## Local Development
 
 1. Install dependencies from `backend/requirements.txt`.
@@ -54,6 +62,7 @@ python -m pytest -q
 - Main branch is tracked on GitHub.
 - The server is treated as disposable runtime state.
 - GitHub is the source of truth for code and documentation.
+- CI protects `main` through the `test` check.
 
 ## Future Work
 
