@@ -22,7 +22,7 @@ Use this checklist before publishing a new backend or server release.
 - [ ] Sync only the files that changed
 - [ ] Rebuild the backend container if application code changed
 - [ ] Apply the production env file with `docker compose --env-file .env.prod`
-- [ ] Run the minimal smoke test after deploy
+- [ ] Run the minimal smoke test after deploy: `python tools/smoke_prod.py --base-url https://your-domain.example`
 - [ ] Confirm `/health` is `ok`
 
 ## Webhook

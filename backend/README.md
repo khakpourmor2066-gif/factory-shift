@@ -208,6 +208,21 @@ This command runs:
 - seed
 - end-to-end demo
 
+## Production Smoke Test
+
+After deploy, verify the runtime with:
+
+```bash
+python tools/smoke_prod.py --base-url https://your-domain.example --run-seed
+```
+
+The smoke test checks:
+- `/health`
+- admin dashboard access with a seeded supervisor user
+- a bot webhook round trip
+
+If you do not want the script to seed demo data again, omit `--run-seed`.
+
 ## Tests
 
 ```bash

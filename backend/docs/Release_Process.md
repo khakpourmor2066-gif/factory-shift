@@ -8,7 +8,7 @@
 6. Wait for the CI check to pass.
 7. Merge the pull request.
 8. Deploy from the merged commit SHA.
-9. Run the server smoke tests.
+9. Run the server smoke tests with `python tools/smoke_prod.py`.
 10. Record the release in the changelog and runbook if needed.
 
 ## Deployment Rule
