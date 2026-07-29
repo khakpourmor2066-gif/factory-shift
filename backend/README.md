@@ -255,14 +255,18 @@ This command runs:
 After deploy, verify the runtime with:
 
 ```bash
-python tools/smoke_prod.py --base-url https://your-domain.example --run-seed
+bash tools/smoke_prod_server.sh https://your-domain.example
 ```
 
 The smoke test checks:
 - `/health`
 - `/health/ready`
-- admin dashboard access with a seeded supervisor user
-- a bot webhook round trip
+- admin dashboard access with a scoped Bearer token
+- Bale Bot API availability through `getMe`
+- Bale webhook registration through `getWebhookInfo`
+
+The production wrapper intentionally does not send a message to a fake chat ID.
+Its output never prints the bot token or webhook URL.
 
 Sample employee table:
 - `backend/docs/Sample_Employees.md`
@@ -273,7 +277,9 @@ Seed this sample into the database:
 python tools/seed_sample_employees.py --seed-base
 ```
 
-If you do not want the script to seed demo data again, omit `--run-seed`.
+For local seeded checks, `tools/smoke_prod.py` remains available. Use
+`--skip-bot` whenever a real provider token is configured and the target chat ID
+is not a verified test user.
 
 ## Tests
 
@@ -295,9 +301,9 @@ pytest
 
 ## Important Notes
 
-- `X-User-Id` is a temporary MVP access mechanism.
-- Real authentication is not implemented yet.
-- Bot adapters for Bale and Rubika are skeletons.
+- Production administrative APIs use hashed, expiring, revocable Bearer tokens.
+- Keep `ALLOW_LEGACY_USER_HEADER=false` in production.
+- Bale is the operational messenger adapter; Rubika remains a future adapter.
 - Attendance import remains row-based; employee and shift imports support CSV/XLSX.
 - Production should rely on Alembic migrations.
 - `AUTO_CREATE_TABLES` must stay `false` outside local experiments.

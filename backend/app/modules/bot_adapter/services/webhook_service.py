@@ -195,7 +195,13 @@ def resolve_webhook_message(db: Session, payload: BotWebhookPayload) -> dict:
     response = resolve_user_message(db, user, payload.text)
     bot_adapter = get_platform_adapter(platform)
     bot_text = format_bot_response(response)
-    bot_adapter.send_message(payload.messenger_user_id, bot_text, response.get("reply_markup"))
+    try:
+        bot_adapter.send_message(payload.messenger_user_id, bot_text, response.get("reply_markup"))
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="messaging platform delivery failed",
+        ) from exc
     return {
         "ok": True,
         "platform": platform,

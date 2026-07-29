@@ -19,4 +19,7 @@ docker compose -f docker-compose.prod.yml --env-file .env.prod exec -T backend \
   python tools/smoke_prod.py \
     --base-url "${public_base_url}" \
     --api-token "${api_token}" \
-    --bot-secret "${BOT_WEBHOOK_SECRET}"
+    --skip-bot
+
+docker compose -f docker-compose.prod.yml --env-file .env.prod exec -T backend \
+  python tools/check_bale_runtime.py

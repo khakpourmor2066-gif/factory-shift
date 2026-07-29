@@ -9,6 +9,10 @@
 - Protected shift-management endpoints with role checks.
 - Added hashed, expiring, revocable user API tokens with audit logging.
 - Added a Persian browser UI for HR and shift-manager imports.
+- Replaced the production bot smoke message to a fake chat with safe `getMe` and
+  `getWebhookInfo` runtime checks.
+- Converted generic messaging-provider delivery failures from unhandled 500
+  responses to controlled 502 responses.
 
 ## 2026-07-28
 

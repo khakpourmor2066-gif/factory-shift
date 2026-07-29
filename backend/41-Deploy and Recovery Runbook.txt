@@ -14,19 +14,25 @@
 - Dashboard: `https://213.176.6.200.nip.io/admin/dashboard`
 
 Deploy sequence:
-1. `scp` فایل‌های تغییرکرده را به `/opt/factory_shift/backend` منتقل کن.
-2. `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build backend`
-3. `docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T backend python -m tools.seed_scenarios all`
-4. `docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T backend python -m tools.smoke_prod --base-url http://127.0.0.1:8000 --skip-bot`
-5. `curl -fsS https://213.176.6.200.nip.io/health`
-6. webhook را با payload تست کن.
+1. از revision مورد تأیید GitHub یک archive بساز و آن را در `/opt/factory_shift` استخراج کن.
+2. قبل از migration از کد و PostgreSQL نسخه پشتیبان بگیر.
+3. `docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm backend alembic upgrade head`
+4. `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build --no-deps backend`
+5. `bash backend/tools/smoke_prod_server.sh https://213.176.6.200.nip.io`
+6. `bash backend/tools/smoke_import_server.sh https://213.176.6.200.nip.io`
+7. revision مستقرشده را فقط پس از موفقیت smoke در `.deployed_revision` ثبت کن.
+
+Production smoke:
+- health، readiness و dashboard را از مسیر عمومی بررسی می‌کند.
+- `getMe` و `getWebhookInfo` بله را بدون چاپ token یا URL محرمانه بررسی می‌کند.
+- برای شناسه جعلی پیام واقعی ارسال نمی‌کند.
 
 Recovery sequence:
 1. `docker compose -f docker-compose.prod.yml ps`
 2. `docker logs factory_shift_backend --tail 200`
 3. `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build backend`
 4. `docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T backend python -m tools.seed_access_demo`
-5. `docker compose --env-file .env.prod -f docker-compose.prod.yml exec -T backend python -m tools.smoke_prod --base-url http://127.0.0.1:8000 --skip-bot`
+5. `bash backend/tools/smoke_prod_server.sh https://213.176.6.200.nip.io`
 
 Known caveat:
 - اگر `docker compose` بدون `--env-file .env.prod` اجرا شود، warningهای `POSTGRES_PASSWORD` و `BOT_WEBHOOK_SECRET` ظاهر می‌شوند.
