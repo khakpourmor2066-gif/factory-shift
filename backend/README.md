@@ -268,6 +268,16 @@ The smoke test checks:
 The production wrapper intentionally does not send a message to a fake chat ID.
 Its output never prints the bot token or webhook URL.
 
+Create and verify production backups:
+
+```bash
+bash tools/backup_prod_server.sh predeploy
+bash tools/verify_postgres_backup.sh /opt/backups/<database-backup>.sql.gz
+```
+
+The backup excludes `.env.prod`, applies mode `600`, validates both archives,
+and restores the database into a disposable PostgreSQL container for verification.
+
 Sample employee table:
 - `backend/docs/Sample_Employees.md`
 

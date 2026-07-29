@@ -23,6 +23,8 @@ Use this checklist when the API, database, Bale webhook, or import workflow is u
 - Roll back a bad import through `POST /imports/{job_id}/rollback`.
 - Roll back application code to the last reviewed Git commit.
 - Apply migrations only after the database backup state is known.
+- Verify a database backup in an isolated container with
+  `tools/verify_postgres_backup.sh` before relying on it for recovery.
 - Rebuild the backend container and run the production smoke test.
 - Keep `ALLOW_LEGACY_USER_HEADER=false` unless a controlled bootstrap is required.
 

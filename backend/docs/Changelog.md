@@ -13,6 +13,8 @@
   `getWebhookInfo` runtime checks.
 - Converted generic messaging-provider delivery failures from unhandled 500
   responses to controlled 502 responses.
+- Added repeatable production code/database backup and isolated PostgreSQL
+  restore-verification tools.
 
 ## 2026-07-28
 
