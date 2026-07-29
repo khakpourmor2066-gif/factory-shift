@@ -72,8 +72,9 @@ webhook_result="$(
   docker compose -f "${compose_file}" --env-file "${env_file}" exec -T backend \
     python tools/configure_bale_webhook.py get
 )"
+webhook_json="${webhook_result#*$'\n'}"
 python3 -c \
   'import json,sys; result=json.load(sys.stdin); assert result["ok"]; print("bale_webhook_ok=true"); print("pending_update_count=%s" % result.get("result",{}).get("pending_update_count",0))' \
-  <<<"${webhook_result}"
+  <<<"${webhook_json}"
 
 echo "webhook_secret_rotated=true"
