@@ -27,6 +27,11 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      - name: Audit dependencies
+        run: |
+          pip install pip-audit
+          python -m pip_audit -r requirements.txt
+
       - name: Validate shell scripts
         run: bash -n tools/*.sh
 
