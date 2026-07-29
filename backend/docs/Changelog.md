@@ -15,6 +15,8 @@
   responses to controlled 502 responses.
 - Added repeatable production code/database backup and isolated PostgreSQL
   restore-verification tools.
+- Upgraded FastAPI, Starlette, and python-multipart to remove known dependency
+  vulnerabilities and added dependency auditing to CI.
 
 ## 2026-07-28
 
