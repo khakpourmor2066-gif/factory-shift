@@ -16,7 +16,7 @@
 Deploy sequence:
 1. از revision مورد تأیید GitHub یک archive بساز و آن را در `/opt/factory_shift` استخراج کن.
 2. قبل از migration از کد و PostgreSQL نسخه پشتیبان بگیر.
-3. `docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm backend alembic upgrade head`
+3. `docker compose --env-file .env.prod -f docker-compose.prod.yml run --rm --no-deps backend python -m alembic upgrade head`
 4. `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build --no-deps backend`
 5. `bash backend/tools/smoke_prod_server.sh https://213.176.6.200.nip.io`
 6. `bash backend/tools/smoke_import_server.sh https://213.176.6.200.nip.io`

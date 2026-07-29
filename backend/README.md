@@ -62,7 +62,7 @@ docker compose up -d postgres
 Run migrations from `backend`:
 
 ```bash
-alembic upgrade head
+python -m alembic upgrade head
 ```
 
 Create repeatable MVP demo data:
