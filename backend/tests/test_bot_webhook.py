@@ -39,6 +39,11 @@ class FakeAdapter:
         self.calls.append((user_id, text, reply_markup))
 
 
+class FailingAdapter:
+    def send_message(self, user_id: str, text: str, reply_markup=None) -> None:
+        raise RuntimeError("provider failure")
+
+
 def override_db(user):
     def _override():
         yield FakeSession(user)
@@ -90,6 +95,30 @@ def test_bot_webhook_sends_reply(monkeypatch):
                 },
             )
         ]
+
+
+def test_bot_webhook_returns_bad_gateway_when_delivery_fails(monkeypatch):
+    user = SimpleNamespace(id=1, role="EMPLOYEE", is_active=True, messenger_user_id="emp-1")
+
+    app.dependency_overrides[get_db] = override_db(user)
+    monkeypatch.setattr(
+        bot_services.webhook_service,
+        "get_platform_adapter",
+        lambda platform: FailingAdapter(),
+    )
+    client = TestClient(app)
+
+    try:
+        response = client.post(
+            "/bot/webhook",
+            headers={"X-Bot-Secret": settings.bot_webhook_secret},
+            json={"messenger_user_id": "emp-1", "text": "منو"},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 502
+    assert response.json() == {"detail": "messaging platform delivery failed"}
 
 
 def test_format_supervisor_schedule_lists_employees():

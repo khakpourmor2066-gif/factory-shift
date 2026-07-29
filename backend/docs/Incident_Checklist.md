@@ -30,7 +30,9 @@ Use this checklist when the API, database, Bale webhook, or import workflow is u
 
 - Liveness and readiness return 200.
 - Bearer authentication succeeds and revoked tokens return 401.
-- A bot `/start` request receives a response.
+- `tools/check_bale_runtime.py` confirms Bot API access and webhook registration.
+- Use a real controlled Bale test account for an end-user `/start` check; never
+  send production smoke messages to a fabricated chat ID.
 - A preview-only sample import reports expected counts.
 - No unexpected schedule or employee rows remain from verification.
 
