@@ -65,3 +65,15 @@ def test_admin_dashboard_returns_html_for_supervisor():
 
     assert response.status_code == 200
     assert "داشبورد مدیریتی" in response.text
+
+
+def test_import_dashboard_is_static_and_uses_bearer_api_calls():
+    client = TestClient(app)
+
+    response = client.get("/admin/imports")
+
+    assert response.status_code == 200
+    assert "ورود کارکنان و برنامه شیفت" in response.text
+    assert "Authorization" in response.text
+    assert "/imports/${typeInput.value}/preview" in response.text
+    assert response.headers["Cache-Control"] == "no-store"

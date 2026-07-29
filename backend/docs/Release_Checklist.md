@@ -24,6 +24,12 @@ Use this checklist before publishing a new backend or server release.
 - [ ] Apply the production env file with `docker compose --env-file .env.prod`
 - [ ] Run the minimal smoke test after deploy: `python tools/smoke_prod.py --base-url https://your-domain.example`
 - [ ] Confirm `/health` is `ok`
+- [ ] Confirm `/health/ready` reports database `ok`
+- [ ] Confirm migration `0008_data_imports` is applied
+- [ ] Confirm `MAX_IMPORT_BYTES` matches the operational limit
+- [ ] Bootstrap and store an operator bearer token
+- [ ] Set `ALLOW_LEGACY_USER_HEADER=false`
+- [ ] Run `smoke_prod.py` with `--api-token`
 
 ## Webhook
 
@@ -37,3 +43,5 @@ Use this checklist before publishing a new backend or server release.
 - [ ] Keep the latest commit SHA recorded
 - [ ] Confirm the runbook still matches the server layout
 - [ ] Verify rollback is possible from GitHub state
+- [ ] Preview a sample import and reject it without changing product data
+- [ ] Review `docs/Incident_Checklist.md`

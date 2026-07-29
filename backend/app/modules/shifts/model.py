@@ -1,4 +1,4 @@
-﻿from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text, Time, func
 from sqlalchemy.orm import relationship
 
 from app.database.connection import Base
@@ -45,6 +45,13 @@ class Schedule(Base):
     employee_id = Column(Integer, ForeignKey("employees.id"), nullable=False)
     date = Column(Date, nullable=False, index=True)
     status = Column(String(20), nullable=False)
+    shift_name = Column(String(100), nullable=True)
+    shift_code = Column(String(50), nullable=True)
+    start_time = Column(Time, nullable=True)
+    end_time = Column(Time, nullable=True)
+    location = Column(String(150), nullable=True)
+    note = Column(Text, nullable=True)
+    source = Column(String(100), nullable=True)
     generated_from = Column(String(50), nullable=False, default="GENERATOR")
     published = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)

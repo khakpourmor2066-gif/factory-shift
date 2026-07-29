@@ -1,4 +1,4 @@
-﻿from datetime import date
+from datetime import date, time
 
 from pydantic import BaseModel, ConfigDict
 
@@ -47,5 +47,12 @@ class ScheduleRead(BaseModel):
     employee_id: int
     date: date
     status: str
+    shift_name: str | None = None
+    shift_code: str | None = None
+    start_time: time | None = None
+    end_time: time | None = None
+    location: str | None = None
+    note: str | None = None
+    source: str | None = None
     published: bool
     model_config = ConfigDict(from_attributes=True)
