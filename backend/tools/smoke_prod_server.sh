@@ -12,8 +12,11 @@ fi
 
 api_token="$(tr -d '\r\n' < "${token_file}")"
 cd "${project_root}"
+set -a
+source .env.prod
+set +a
 docker compose -f docker-compose.prod.yml --env-file .env.prod exec -T backend \
   python tools/smoke_prod.py \
     --base-url "${public_base_url}" \
     --api-token "${api_token}" \
-    --skip-bot
+    --bot-secret "${BOT_WEBHOOK_SECRET}"
