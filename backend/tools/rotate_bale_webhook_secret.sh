@@ -52,7 +52,7 @@ finally:
 PY
 
 cd "${project_root}"
-docker compose -f "${compose_file}" --env-file "${env_file}" up -d --force-recreate backend >/dev/null
+docker compose -f "${compose_file}" --env-file "${env_file}" up -d --no-deps --force-recreate backend >/dev/null
 
 for _ in 1 2 3 4 5 6 7 8 9 10; do
   if curl -fsS http://127.0.0.1:8000/health >/dev/null 2>&1; then
@@ -73,7 +73,7 @@ webhook_result="$(
     python tools/configure_bale_webhook.py get
 )"
 python3 -c \
-  'import json,sys; result=json.load(sys.stdin); assert result["ok"]; print("bale_webhook_ok=true"); print(f"pending_update_count={result.get(\"result\",{}).get(\"pending_update_count\",0)}")' \
+  'import json,sys; result=json.load(sys.stdin); assert result["ok"]; print("bale_webhook_ok=true"); print("pending_update_count=%s" % result.get("result",{}).get("pending_update_count",0))' \
   <<<"${webhook_result}"
 
 echo "webhook_secret_rotated=true"
