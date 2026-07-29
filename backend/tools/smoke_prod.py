@@ -118,8 +118,7 @@ def main() -> int:
             print(dashboard_body)
             return 1
 
-    bot_status = 200
-    bot_body = ""
+    bot_result = {"skipped": True}
     if not args.skip_bot:
         bot_status, bot_body = http_post_json(
             f"{args.base_url.rstrip('/')}{args.bot_path}",
@@ -134,6 +133,11 @@ def main() -> int:
             print(f"bot_status={bot_status}")
             print(bot_body)
             return 1
+        bot_result = {
+            "status": bot_status,
+            "messenger_user_id": args.bot_user_id,
+            "skipped": False,
+        }
 
     print(
         json.dumps(
@@ -144,7 +148,7 @@ def main() -> int:
                     "body": json.loads(readiness_body),
                 },
                 "dashboard": {"status": dashboard_status, "user_id": supervisor_user_id},
-                "bot": {"status": bot_status, "messenger_user_id": args.bot_user_id},
+                "bot": bot_result,
             },
             ensure_ascii=False,
             indent=2,

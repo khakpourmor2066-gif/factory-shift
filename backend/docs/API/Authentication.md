@@ -26,6 +26,15 @@ ALLOW_LEGACY_USER_HEADER=false
 The old `X-User-Id` header remains available only when
 `ALLOW_LEGACY_USER_HEADER=true`. Production should keep it disabled.
 
+On the server, this can be automated without printing the token:
+
+```bash
+bash backend/tools/enable_production_bearer_auth.sh 1
+```
+
+The operator token is written with root-only permissions to
+`/root/.factory_shift_operator_token`.
+
 ## Token API
 
 ```text
