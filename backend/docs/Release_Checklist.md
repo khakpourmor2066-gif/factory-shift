@@ -30,6 +30,7 @@ Use this checklist before publishing a new backend or server release.
 - [ ] Bootstrap and store an operator bearer token
 - [ ] Set `ALLOW_LEGACY_USER_HEADER=false`
 - [ ] Run `smoke_prod.py` with `--api-token`
+- [ ] On the server, run `bash backend/tools/smoke_prod_server.sh`
 
 ## Webhook
 
