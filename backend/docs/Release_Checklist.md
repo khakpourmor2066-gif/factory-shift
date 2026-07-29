@@ -31,6 +31,7 @@ Use this checklist before publishing a new backend or server release.
 - [ ] Set `ALLOW_LEGACY_USER_HEADER=false`
 - [ ] Run `smoke_prod.py` with `--api-token`
 - [ ] On the server, run `bash backend/tools/smoke_prod_server.sh`
+- [ ] Run `bash backend/tools/smoke_import_server.sh` and confirm rollback
 
 ## Webhook
 
