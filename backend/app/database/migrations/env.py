@@ -4,7 +4,9 @@ from sqlalchemy import engine_from_config, pool
 from app.core.config import settings
 from app.database.connection import Base
 from app.modules.access_requests.model import AccessRequest
+from app.modules.auth_tokens.model import ApiToken
 from app.modules.departments.model import Department
+from app.modules.data_imports.model import ImportError, ImportJob
 from app.modules.employees.model import Employee
 from app.modules.shifts.model import EmployeeShiftAssignment, Schedule, ShiftPattern, ShiftPatternDay
 from app.modules.users.model import User

@@ -15,6 +15,7 @@ Implemented modules:
 - Change Management
 - Attendance
 - Reports
+- Managed employee and shift imports
 
 ## Requirements
 
@@ -46,6 +47,8 @@ BALE_BOT_TOKEN=your-bale-bot-token
 BALE_API_BASE_URL=https://tapi.bale.ai
 BALE_SEND_URL=
 RUBIKA_SEND_URL=
+MAX_IMPORT_BYTES=5242880
+ALLOW_LEGACY_USER_HEADER=true
 ```
 
 ## Database
@@ -81,6 +84,9 @@ Migration chain:
 - `0003_user_access.py`
 - `0004_change_management.py`
 - `0005_attendance_reports.py`
+- `0006_access_requests.py`
+- `0007_webhook_logs.py`
+- `0008_data_imports.py`
 
 ## Run
 
@@ -92,7 +98,43 @@ Health check:
 
 ```text
 GET /health
+GET /health/live
+GET /health/ready
+GET /metrics
 ```
+
+## Managed Imports
+
+HR employee files and supervisor schedule files support CSV/XLSX preview, persisted
+row errors, confirmation, rejection, and rollback.
+
+```bash
+python tools/import_data.py employees.csv --type employees --user-id 1
+python tools/import_data.py shifts.xlsx --type shifts --user-id 2 --confirm
+```
+
+See `docs/API/Data_Imports.md`, `docs/HR_Import_Guide_FA.md`, and
+`docs/Shift_Import_Guide_FA.md`.
+
+Browser UI:
+
+```text
+GET /admin/imports
+```
+
+The page keeps the bearer token only in memory and supports preview, confirm, reject,
+rollback, and template download.
+
+## API Authentication
+
+User-scoped bearer tokens are supported. Bootstrap a token for an existing operator,
+then disable the legacy `X-User-Id` header in production:
+
+```bash
+python tools/bootstrap_api_token.py --user-id 1 --expires-days 30
+```
+
+See `docs/API/Authentication.md`.
 
 ## Bale Integration
 
@@ -218,8 +260,18 @@ python tools/smoke_prod.py --base-url https://your-domain.example --run-seed
 
 The smoke test checks:
 - `/health`
+- `/health/ready`
 - admin dashboard access with a seeded supervisor user
 - a bot webhook round trip
+
+Sample employee table:
+- `backend/docs/Sample_Employees.md`
+
+Seed this sample into the database:
+
+```bash
+python tools/seed_sample_employees.py --seed-base
+```
 
 If you do not want the script to seed demo data again, omit `--run-seed`.
 
@@ -246,6 +298,6 @@ pytest
 - `X-User-Id` is a temporary MVP access mechanism.
 - Real authentication is not implemented yet.
 - Bot adapters for Bale and Rubika are skeletons.
-- Attendance import is row-based and does not parse Excel files yet.
+- Attendance import remains row-based; employee and shift imports support CSV/XLSX.
 - Production should rely on Alembic migrations.
 - `AUTO_CREATE_TABLES` must stay `false` outside local experiments.

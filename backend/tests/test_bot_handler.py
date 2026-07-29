@@ -5,6 +5,7 @@ import pytest
 from fastapi import HTTPException
 
 from app.modules.bot_adapter.handlers import bot_handler
+from app.modules.bot_adapter.services.webhook_service import format_bot_response
 
 
 def test_employee_schedule_message_is_detected(monkeypatch):
@@ -238,6 +239,24 @@ def test_help_message_is_role_specific():
 
     assert employee_result["text"] == "برای دیدن برنامه خود، «برنامه من» را بزنید."
     assert supervisor_result["text"] == "برای مشاهده افراد روز، «افراد روز» را بزنید."
+
+
+def test_identity_missing_message_is_short_and_step_based():
+    response = {"type": "identity_missing"}
+
+    text = format_bot_response(response)
+
+    assert "ابتدا شماره تلفن همراه" in text
+    assert "کد کارمندی" in text
+
+
+def test_contact_received_message_is_step_based():
+    response = {"type": "contact_received"}
+
+    text = format_bot_response(response)
+
+    assert "شماره تلفن همراه دریافت شد." in text
+    assert "اکنون، شماره کارمندی خود را ارسال کنید." in text
 
 
 def test_employee_cannot_view_supervisor_schedule():

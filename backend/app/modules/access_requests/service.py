@@ -248,14 +248,12 @@ def activate_access_by_hr_identity(
 
 def format_identity_request_message(messenger_user_id: str, request_id: int | None = None) -> str:
     lines = [
-        "برای فعال‌سازی، شماره موبایل و کد کارمندی را بفرستید.",
-        "اگر دکمه ارسال شماره را می‌بینید، ابتدا شماره را ارسال کنید و سپس کد کارمندی را بفرستید.",
-        "نمونه:",
-        "ثبت 09120000002 EMP-001",
-        f"شناسه بله شما: {messenger_user_id}",
+        "به ربات نمایش شیفت‌های کاری خوش آمدید.",
+        "برای فعال‌سازی، اگر دکمه «ارسال شماره تلفن» را در پایین صفحه مشاهده می‌کنید، همان را ارسال کنید.",
+        "در غیر این صورت، ابتدا شماره تلفن همراه را بفرستید.",
+        "مثال:",
+        "0912*******",
     ]
-    if request_id is not None:
-        lines.append(f"شماره درخواست دسترسی: {request_id}")
     return "\n".join(lines)
 
 
@@ -275,13 +273,23 @@ def format_access_approved_message() -> str:
     return "دسترسی شما فعال شد. برای شروع /start را بفرستید."
 
 
-def format_contact_received_message(messenger_user_id: str, request_id: int | None = None) -> str:
+def format_contact_received_message(
+    messenger_user_id: str,
+    request_id: int | None = None,
+    contact_mobile: str | None = None,
+) -> str:
     lines = [
-        "شماره تلفن دریافت شد.",
-        "اکنون فقط کد کارمندی را بفرستید.",
-        "نمونه دکمه/متن: EMP-001",
-        f"شناسه بله شما: {messenger_user_id}",
+        "شماره تلفن همراه دریافت شد.",
     ]
+    if contact_mobile:
+        lines.append(f"شماره: {contact_mobile}")
+    lines.extend(
+        [
+            "اکنون، شماره کارمندی خود را ارسال کنید.",
+            "مثال: EMP-001",
+            f"شناسه بله شما: {messenger_user_id}",
+        ]
+    )
     if request_id is not None:
         lines.append(f"شماره درخواست دسترسی: {request_id}")
     return "\n".join(lines)

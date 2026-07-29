@@ -123,7 +123,32 @@ def test_bale_webhook_unknown_user_creates_access_request(monkeypatch):
 
     assert response.status_code == 200
     body = response.json()
-    assert body["status"] == "unknown_user"
+    assert body["status"] == "identity_missing"
+    assert body["approval_status"] == "identity_missing"
     assert body["access_request_id"] == 101
     assert session.created_requests[0].messenger_user_id == "999"
     assert session.created_requests[0].latest_text == "منو"
+
+
+def test_bale_webhook_unknown_user_prompts_for_contact_first(monkeypatch):
+    session = FakeSession(None)
+
+    def _override():
+        yield session
+
+    app.dependency_overrides[get_db] = _override
+    client = TestClient(app)
+
+    try:
+        response = client.post(
+            f"/bot/bale/webhook/{settings.bot_webhook_secret}",
+            json={"message": {"chat": {"id": 999}, "text": "EMP-001"}},
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "identity_missing"
+    assert body["approval_status"] == "identity_missing"
+    assert body["access_request_id"] == 101

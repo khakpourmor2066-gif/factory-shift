@@ -18,6 +18,10 @@ class Settings(BaseModel):
     bale_webhook_url: str = os.getenv("BALE_WEBHOOK_URL", "")
     bale_send_url: str = os.getenv("BALE_SEND_URL", "")
     rubika_send_url: str = os.getenv("RUBIKA_SEND_URL", "")
+    max_import_bytes: int = int(os.getenv("MAX_IMPORT_BYTES", str(5 * 1024 * 1024)))
+    allow_legacy_user_header: bool = (
+        os.getenv("ALLOW_LEGACY_USER_HEADER", "true").lower() == "true"
+    )
 
 
 settings = Settings()

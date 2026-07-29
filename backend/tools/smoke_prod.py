@@ -63,10 +63,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--run-seed", action="store_true", help="Seed demo data before checks")
     parser.add_argument("--dashboard-path", default="/admin/dashboard")
     parser.add_argument("--health-path", default="/health")
+    parser.add_argument("--readiness-path", default="/health/ready")
     parser.add_argument("--bot-path", default="/bot/webhook")
     parser.add_argument("--bot-user-id", default="emp-1")
     parser.add_argument("--bot-text", default="منو")
     parser.add_argument("--bot-secret", default="local-dev-secret")
+    parser.add_argument("--api-token", default="")
     parser.add_argument("--skip-dashboard", action="store_true")
     parser.add_argument("--skip-bot", action="store_true")
     return parser
@@ -89,22 +91,34 @@ def main() -> int:
         print(health_body)
         return 1
 
+    readiness_status, readiness_body = http_get_json(
+        f"{args.base_url.rstrip('/')}{args.readiness_path}"
+    )
+    if readiness_status != 200:
+        print(f"readiness_status={readiness_status}")
+        print(readiness_body)
+        return 1
+
     supervisor_user_id = find_supervisor_user_id()
+    api_headers = (
+        {"Authorization": f"Bearer {args.api_token}"}
+        if args.api_token
+        else {"X-User-Id": str(supervisor_user_id)}
+    )
 
     dashboard_status = 200
     dashboard_body = ""
     if not args.skip_dashboard:
         dashboard_status, dashboard_body = http_get_json(
             f"{args.base_url.rstrip('/')}{args.dashboard_path}",
-            headers={"X-User-Id": str(supervisor_user_id)},
+            headers=api_headers,
         )
         if dashboard_status != 200:
             print(f"dashboard_status={dashboard_status}")
             print(dashboard_body)
             return 1
 
-    bot_status = 200
-    bot_body = ""
+    bot_result = {"skipped": True}
     if not args.skip_bot:
         bot_status, bot_body = http_post_json(
             f"{args.base_url.rstrip('/')}{args.bot_path}",
@@ -119,13 +133,22 @@ def main() -> int:
             print(f"bot_status={bot_status}")
             print(bot_body)
             return 1
+        bot_result = {
+            "status": bot_status,
+            "messenger_user_id": args.bot_user_id,
+            "skipped": False,
+        }
 
     print(
         json.dumps(
             {
                 "health": {"status": health_status, "body": json.loads(health_body)},
+                "readiness": {
+                    "status": readiness_status,
+                    "body": json.loads(readiness_body),
+                },
                 "dashboard": {"status": dashboard_status, "user_id": supervisor_user_id},
-                "bot": {"status": bot_status, "messenger_user_id": args.bot_user_id},
+                "bot": bot_result,
             },
             ensure_ascii=False,
             indent=2,
