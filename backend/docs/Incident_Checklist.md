@@ -40,3 +40,9 @@ Use this checklist when the API, database, Bale webhook, or import workflow is u
 - Add or update a regression test.
 - Update the changelog if product behavior changed.
 - Rotate any credential that may have been exposed.
+
+Rotate the Bale webhook secret without printing its value:
+
+```bash
+bash backend/tools/rotate_bale_webhook_secret.sh https://your-domain.example
+```
