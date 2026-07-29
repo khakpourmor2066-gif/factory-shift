@@ -110,8 +110,8 @@ def resolve_bale_webhook_message(db: Session, payload: dict) -> dict:
             message_sent = try_send_bale_message(
                 bot_adapter,
                 messenger_user_id,
-                format_contact_received_message(messenger_user_id, access_request.id),
-                )
+                format_contact_received_message(messenger_user_id, access_request.id, contact_mobile),
+            )
             create_webhook_log(
                 db,
                 platform="bale",
@@ -128,6 +128,7 @@ def resolve_bale_webhook_message(db: Session, payload: dict) -> dict:
                 "status": "contact_received",
                 "messenger_user_id": messenger_user_id,
                 "access_request_id": access_request.id,
+                "contact_mobile": contact_mobile,
                 "message_sent": message_sent,
             }
 

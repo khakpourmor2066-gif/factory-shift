@@ -82,13 +82,13 @@ def format_bot_response(response: dict) -> str:
             ]
         )
     if response_type == "contact_received":
-        return "\n".join(
-            [
-                "شماره تلفن دریافت شد.",
-                "اکنون فقط کد کارمندی را بفرستید.",
-                "نمونه: EMP-001",
-            ]
-        )
+        data = response.get("data", {})
+        contact_mobile = data.get("contact_mobile")
+        lines = ["شماره تلفن همراه دریافت شد."]
+        if contact_mobile:
+            lines.append(f"شماره: {contact_mobile}")
+        lines.extend(["اکنون، شماره کارمندی خود را ارسال کنید.", "مثال: EMP-001"])
+        return "\n".join(lines)
     if response_type == "operations_menu":
         return "\n".join(
             [
@@ -168,7 +168,13 @@ def format_bot_response(response: dict) -> str:
     if response_type == "unknown":
         return response.get("text", "یک دکمه را انتخاب کنید.")
     if response_type == "welcome":
-        return response.get("text", "خوش آمدید.")
+        text = response.get("text", "خوش آمدید.")
+        data = response.get("data", {})
+        pending_activation_count = data.get("pending_activation_count")
+        lines = [text]
+        if pending_activation_count is not None:
+            lines.append(f"تعداد درخواست‌های فعال‌سازی بررسی‌نشده: {pending_activation_count}")
+        return "\n".join(lines)
     if response_type == "menu":
         return response.get("text", "منو")
     items = response.get("items", [])

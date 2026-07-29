@@ -255,8 +255,8 @@ def test_contact_received_message_is_step_based():
 
     text = format_bot_response(response)
 
-    assert "شماره تلفن دریافت شد." in text
-    assert "اکنون فقط کد کارمندی را بفرستید." in text
+    assert "شماره تلفن همراه دریافت شد." in text
+    assert "اکنون، شماره کارمندی خود را ارسال کنید." in text
 
 
 def test_employee_cannot_view_supervisor_schedule():
