@@ -14,20 +14,22 @@ def get_supervisor_schedule(db: Session, user: User, target_date: date) -> dict:
     if not can_view_supervisor_schedule(user.role):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission denied")
 
-    supervisor_employee = get_employee_for_user(db, user)
-    if supervisor_employee is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="supervisor employee profile not linked")
-
-    rows = (
+    query = (
         db.query(Employee, Schedule)
         .join(Schedule, Schedule.employee_id == Employee.id)
-        .filter(Employee.supervisor_id == supervisor_employee.id)
         .filter(Employee.is_active.is_(True))
         .filter(Schedule.date == target_date)
         .filter(Schedule.published.is_(True))
-        .order_by(Employee.id)
-        .all()
     )
+    if user.role == "SUPERVISOR":
+        supervisor_employee = get_employee_for_user(db, user)
+        if supervisor_employee is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="supervisor employee profile not linked",
+            )
+        query = query.filter(Employee.supervisor_id == supervisor_employee.id)
+    rows = query.order_by(Employee.id).all()
 
     return {
         "date": target_date,

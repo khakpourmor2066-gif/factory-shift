@@ -4,6 +4,8 @@
 
 - Completed demo supervisor relationships and generated published schedules for
   all 14 active roster members across the current and following month.
+- Corrected daily staff visibility so HR/Admin see all scheduled employees and
+  Supervisors remain limited to direct reports.
 - Added clickable HR/Admin web-management links and replaceable 15-minute
   Bearer tokens generated from the Bale bot.
 - Expanded Bale access-request review with mobile, personnel code, employee,

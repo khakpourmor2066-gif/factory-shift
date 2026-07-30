@@ -343,6 +343,10 @@ employees to each supervisor and creates published shift assignments for every
 active employee across the current and following month. Re-running the seed is
 idempotent and fills only missing assignments and dates.
 
+Daily staff visibility is role-aware: HR and Admin see every active employee
+with a published schedule for the selected date, while Supervisors see only
+their direct reports.
+
 HR and Admin help messages include clickable links to the import and schedule
 generation pages. A 15-minute Bearer token can be generated from the bot and
 entered in either web form; previously issued temporary web tokens are revoked.
