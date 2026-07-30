@@ -30,3 +30,20 @@ def update_user_role(db: Session, user: User, user_role: UserRoleUpdate) -> User
         ),
     )
     return user
+
+
+def unlink_messenger_account(db: Session, user: User) -> User:
+    previous_messenger_user_id = user.messenger_user_id
+    user.messenger_user_id = None
+    db.commit()
+    db.refresh(user)
+    create_audit_log(
+        db,
+        AuditLogCreate(
+            user_id=user.id,
+            action="messenger_account_logged_out",
+            before_value=previous_messenger_user_id,
+            after_value=None,
+        ),
+    )
+    return user

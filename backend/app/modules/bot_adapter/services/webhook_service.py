@@ -124,6 +124,8 @@ def format_bot_response(response: dict) -> str:
                 f"ارسال ناموفق: {counts.get('failed', 0)}",
             ]
         )
+    if response_type in {"logout_confirmation", "logged_out"}:
+        return response.get("text", "")
     if response_type == "employee_schedule":
         data = response.get("data", {})
         days = data.get("days", [])

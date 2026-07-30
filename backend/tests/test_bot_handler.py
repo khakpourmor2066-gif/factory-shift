@@ -241,6 +241,40 @@ def test_common_slash_commands_are_detected():
     assert bot_handler.resolve_user_message(None, user, "/help")["type"] == "help"
 
 
+def test_logout_requires_confirmation():
+    user = SimpleNamespace(role="EMPLOYEE")
+
+    result = bot_handler.resolve_user_message(None, user, "خروج از حساب")
+
+    assert result["type"] == "logout_confirmation"
+    assert result["reply_markup"]["inline_keyboard"][0][0]["callback_data"] == "LOGOUT_CONFIRM"
+    assert result["reply_markup"]["inline_keyboard"][1][0]["callback_data"] == "LOGOUT_CANCEL"
+
+
+def test_logout_can_be_cancelled():
+    user = SimpleNamespace(role="EMPLOYEE")
+
+    result = bot_handler.resolve_user_message(None, user, "LOGOUT_CANCEL")
+
+    assert result["type"] == "menu"
+    assert result["text"] == "خروج از حساب لغو شد."
+
+
+def test_logout_confirmation_unlinks_current_user(monkeypatch):
+    user = SimpleNamespace(role="EMPLOYEE")
+    unlinked_users = []
+    monkeypatch.setattr(
+        bot_handler,
+        "unlink_messenger_account",
+        lambda db, current_user: unlinked_users.append(current_user),
+    )
+
+    result = bot_handler.resolve_user_message(None, user, "LOGOUT_CONFIRM")
+
+    assert result["type"] == "logged_out"
+    assert unlinked_users == [user]
+
+
 def test_help_message_is_role_specific():
     employee = SimpleNamespace(role="EMPLOYEE")
     supervisor = SimpleNamespace(role="SUPERVISOR")
