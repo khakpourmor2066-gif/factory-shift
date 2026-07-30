@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-07-30
+
+- Added persistent schedule-generation preview jobs.
+- Added HR/Admin preview, confirm, cancel, and publish APIs.
+- Added a gated Persian schedule-generation web form.
+- Added the complete Bale generation flow with employee, assignment, and
+  quick-range selection.
+- Added audit events and employee/date duplicate protection.
+- Migrated production to `0011_schedule_generation`.
+
 ## 2026-07-29
 
 - Added managed CSV/XLSX imports for HR employees and shift schedules.

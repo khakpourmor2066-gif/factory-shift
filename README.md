@@ -10,6 +10,8 @@ Factory Shift is a FastAPI-based MVP for factory shift management and Bale messe
 - HR contact plus personnel-code activation
 - Webhook logs and audit logs
 - Admin dashboard for operational status
+- Managed schedule generation with preview, draft confirmation, cancellation,
+  and publication from Bale or the Persian web form
 - Seeded demo scenarios for repeatable testing
 
 ## Tech Stack
@@ -63,6 +65,9 @@ python -m pytest -q
 - The server is treated as disposable runtime state.
 - GitHub is the source of truth for code and documentation.
 - CI protects `main` through the `test` check.
+- Production database migrations are at `0011_schedule_generation`.
+- The HR/Admin schedule-generation form is available at
+  `/admin/schedule-generator`.
 
 ## Future Work
 

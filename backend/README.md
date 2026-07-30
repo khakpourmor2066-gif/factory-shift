@@ -291,6 +291,41 @@ For local seeded checks, `tools/smoke_prod.py` remains available. Use
 `--skip-bot` whenever a real provider token is configured and the target chat ID
 is not a verified test user.
 
+## Managed Schedule Generation
+
+HR and Admin users can generate missing schedule days through Bale or the
+Persian browser form:
+
+```text
+/admin/schedule-generator
+```
+
+The browser workflow requires a scoped Bearer token and remains hidden until
+the token is validated as HR or Admin. It supports:
+
+- employee selection
+- assigned-pattern selection
+- exact date-range selection
+- preview without writing schedules
+- draft confirmation
+- cancellation without data changes
+- publication
+
+The corresponding protected APIs are:
+
+```text
+GET  /schedule-generation/options
+POST /schedule-generation/preview
+GET  /schedule-generation/{job_id}
+POST /schedule-generation/{job_id}/confirm
+POST /schedule-generation/{job_id}/publish
+POST /schedule-generation/{job_id}/cancel
+```
+
+Generation fills only missing employee/date records. A database uniqueness
+constraint prevents duplicate schedules for the same employee and date.
+Supervisor and Employee roles cannot execute this workflow.
+
 ## Tests
 
 ```bash
