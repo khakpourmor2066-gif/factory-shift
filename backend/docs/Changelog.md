@@ -6,8 +6,8 @@
   all 14 active roster members across the current and following month.
 - Corrected daily staff visibility so HR/Admin see all scheduled employees and
   Supervisors remain limited to direct reports.
-- Added clickable HR/Admin web-management links and replaceable 15-minute
-  Bearer tokens generated from the Bale bot.
+- Replaced manual Bale-issued web tokens with five-minute, one-time login links
+  that establish revocable eight-hour secure browser sessions.
 - Expanded Bale access-request review with mobile, personnel code, employee,
   role, attempt count, and explicit identity-match status.
 - Restricted activation-request review to HR/Admin and blocked approval unless

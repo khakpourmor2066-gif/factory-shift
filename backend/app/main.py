@@ -6,7 +6,7 @@ from app.core.config import settings
 from app.core.observability import render_metrics, request_observability_middleware
 from app.database.connection import Base, SessionLocal, engine
 from app.modules.access_requests.model import AccessRequest
-from app.modules.auth_tokens.model import ApiToken
+from app.modules.auth_tokens.model import ApiToken, WebLoginTicket
 from app.modules.data_imports.model import ImportError, ImportJob
 from app.modules.departments.model import Department
 from app.modules.employees.model import Employee
