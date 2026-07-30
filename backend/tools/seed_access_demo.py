@@ -13,26 +13,30 @@ from app.seed.mvp_seed import seed_mvp_data
 
 
 DEMO_CSV = """personnel_code,first_name,last_name,mobile,role
-SUP-001,Sara,Supervisor,09120000001,SUPERVISOR
-EMP-001,Ali,Worker,09120000002,EMPLOYEE
-EMP-002,Reza,Operator,09120000003,EMPLOYEE
-EMP-003,Neda,Operator,09120000004,EMPLOYEE
-EMP-004,Mehdi,Technician,09120000005,EMPLOYEE
-EMP-005,Fatemeh,Inspector,09120000006,EMPLOYEE
-EMP-006,Hossein,Operator,09120000007,EMPLOYEE
-EMP-007,Maryam,Planner,09120000008,EMPLOYEE
-EMP-008,Amir,SupervisorAssistant,09120000009,EMPLOYEE
-EMP-009,Zahra,Coordinator,09120000010,EMPLOYEE
+HR-001,Leila,Rahimi,09120000001,HR
+SUP-001,Sara,Mohammadi,09120000002,SUPERVISOR
+SUP-002,Amir,Karimi,09120000003,SUPERVISOR
+SUP-003,Neda,Ebrahimi,09120000004,SUPERVISOR
+EMP-001,Ali,Ahmadi,09120000005,EMPLOYEE
+EMP-002,Reza,Jafari,09120000006,EMPLOYEE
+EMP-003,Hossein,Moradi,09120000007,EMPLOYEE
+EMP-004,Fatemeh,Yazdani,09120000008,EMPLOYEE
+EMP-005,Maryam,Sadeghi,09120000009,EMPLOYEE
+EMP-006,Zahra,Ghasemi,09120000010,EMPLOYEE
+EMP-007,Sina,Hosseini,09120000011,EMPLOYEE
+EMP-008,Elham,Farhadi,09120000012,EMPLOYEE
+EMP-009,Mehdi,Ranjbar,09120000013,EMPLOYEE
+IT-001,Pouya,Karimi,09120000014,ADMIN
 """
 
 
 def ensure_demo_access_requests(db):
     demo_rows = [
-        ("bale", "9001", "ثبت 09120000003 EMP-002", "pending", 1),
-        ("bale", "9002", "ثبت 09120000004 EMP-003", "pending", 2),
+        ("bale", "9001", "ثبت 09120000006 EMP-002", "pending", 1),
+        ("bale", "9002", "ثبت 09120000007 EMP-003", "pending", 2),
         ("bale", "9003", "ثبت 09120009999 EMP-999", "pending", 1),
-        ("bale", "9004", "ثبت 09120000002 EMP-001", "approved", 1),
-        ("bale", "9005", "ثبت 09120000002 EMP-001", "rejected", 1),
+        ("bale", "9004", "ثبت 09120000005 EMP-001", "approved", 1),
+        ("bale", "9005", "ثبت 09120000005 EMP-001", "rejected", 1),
     ]
     created = 0
     for platform, messenger_user_id, latest_text, status, request_count in demo_rows:
