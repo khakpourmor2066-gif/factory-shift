@@ -77,8 +77,8 @@ def test_supervisor_can_update_user_role():
     assert response.json()["role"] == "SUPERVISOR"
 
 
-def test_supervisor_can_update_access_request_status(monkeypatch):
-    supervisor = SimpleNamespace(id=1, role="SUPERVISOR", is_active=True)
+def test_hr_can_update_access_request_status(monkeypatch):
+    hr_user = SimpleNamespace(id=1, role="HR", is_active=True)
     access_request = SimpleNamespace(
         id=7,
         platform="bale",
@@ -92,14 +92,23 @@ def test_supervisor_can_update_access_request_status(monkeypatch):
     session = FakeSession(access_requests=[access_request])
     captured_audit = []
 
+    def approve_request(db, request_id):
+        access_request.status = "approved"
+        return "approved", access_request
+
     monkeypatch.setattr(access_requests_router, "notify_access_request_result", lambda updated_request, status_value: True)
+    monkeypatch.setattr(
+        access_requests_router,
+        "approve_access_request",
+        approve_request,
+    )
     monkeypatch.setattr(
         access_requests_router,
         "create_audit_log",
         lambda db, payload: captured_audit.append(payload),
     )
     app.dependency_overrides[get_db] = override_db(session)
-    app.dependency_overrides[get_current_user] = lambda: supervisor
+    app.dependency_overrides[get_current_user] = lambda: hr_user
     client = TestClient(app)
 
     try:
@@ -113,6 +122,21 @@ def test_supervisor_can_update_access_request_status(monkeypatch):
     assert captured_audit[0].action == "access_request_status_updated"
     assert captured_audit[0].before_value == "pending"
     assert captured_audit[0].after_value == "approved"
+
+
+def test_supervisor_cannot_update_access_request_status():
+    supervisor = SimpleNamespace(id=1, role="SUPERVISOR", is_active=True)
+    session = FakeSession()
+    app.dependency_overrides[get_db] = override_db(session)
+    app.dependency_overrides[get_current_user] = lambda: supervisor
+    client = TestClient(app)
+
+    try:
+        response = client.patch("/access-requests/7/status", json={"status": "approved"})
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 403
 
 
 def test_employee_cannot_update_access_request_status():

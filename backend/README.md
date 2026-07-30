@@ -326,6 +326,15 @@ Generation fills only missing employee/date records. A database uniqueness
 constraint prevents duplicate schedules for the same employee and date.
 Supervisor and Employee roles cannot execute this workflow.
 
+## Access Request Review
+
+HR and Admin users can review pending Bale activation requests from the bot.
+Each review shows the Bale identifier, submitted mobile number, personnel code,
+matched employee, registered role, attempt count, and identity-match result.
+Approval is available only when the submitted mobile number and personnel code
+belong to the same active employee. Invalid or incomplete requests can only be
+rejected. Supervisor and Employee roles cannot access this workflow.
+
 ## Tests
 
 ```bash
