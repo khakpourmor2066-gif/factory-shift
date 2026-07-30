@@ -293,6 +293,7 @@ def test_help_message_is_role_specific():
     assert "۷ روز" in supervisor_result["text"]
     assert "راهنمای منابع انسانی" in hr_result["text"]
     assert "/admin/imports" in hr_result["text"]
+    assert "فقط برای روزهای خالی" in hr_result["text"]
     assert "راهنمای مدیر سیستم" in admin_result["text"]
     assert "تولید خودکار برنامه" in admin_result["text"]
 
