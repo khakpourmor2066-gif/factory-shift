@@ -257,24 +257,62 @@ def test_import_routes_enforce_roles_and_templates_are_reachable():
         close_test_context(db)
 
 
-def test_hr_cannot_confirm_shift_import():
+def test_hr_can_preview_and_confirm_shift_import():
     client, db, user = create_test_context("HR")
-    job = ImportJob(
-        import_type="SHIFT",
-        filename="shifts.csv",
-        status="PENDING",
-        created_by=user.id,
-        total_rows=0,
-        valid_rows=0,
-        rejected_rows=0,
-        payload_json="[]",
+    department = Department(name="Operations")
+    db.add(department)
+    db.flush()
+    db.add(
+        Employee(
+            personnel_code="EMP-HR-001",
+            first_name="Ali",
+            last_name="Ahmadi",
+            mobile="09120000401",
+            department_id=department.id,
+            is_active=True,
+        )
     )
-    db.add(job)
     db.commit()
-    db.refresh(job)
+    content = (
+        "employee_code,shift_date,shift_name,shift_code,start_time,end_time\n"
+        "EMP-HR-001,2026-08-02,روز,DAY,08:00,16:00\n"
+    )
     try:
-        response = client.post(f"/imports/{job.id}/confirm")
-        assert response.status_code == 403
+        template_response = client.get("/imports/templates/shifts")
+        assert template_response.status_code == 200
+
+        preview = client.post(
+            "/imports/shifts/preview",
+            files={"file": ("shifts.csv", content.encode("utf-8"), "text/csv")},
+        )
+        assert preview.status_code == 200
+        job_id = preview.json()["job"]["id"]
+        response = client.post(f"/imports/{job_id}/confirm")
+        assert response.status_code == 200
+        assert db.query(Schedule).filter(Schedule.date == date(2026, 8, 2)).count() == 1
+    finally:
+        close_test_context(db)
+
+
+def test_employee_template_is_self_contained_for_preview():
+    client, db, _ = create_test_context("HR")
+    try:
+        template_response = client.get("/imports/templates/employees")
+        assert template_response.status_code == 200
+        template = template_response.json()
+        preview = client.post(
+            "/imports/employees/preview",
+            files={
+                "file": (
+                    template["filename"],
+                    template["content"].encode("utf-8"),
+                    template["content_type"],
+                )
+            },
+        )
+        assert preview.status_code == 200
+        assert preview.json()["job"]["valid_rows"] == 2
+        assert preview.json()["errors"] == []
     finally:
         close_test_context(db)
 

@@ -40,7 +40,7 @@ curl -X POST http://127.0.0.1:8000/imports/employees/preview \
 
 ## Shift import
 
-Authorized roles: `SUPERVISOR`, `ADMIN`.
+Authorized roles: `HR`, `SUPERVISOR`, `ADMIN`.
 
 Required columns:
 

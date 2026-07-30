@@ -45,7 +45,7 @@ async def preview_shift_import(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    require_roles(current_user, {"SUPERVISOR", "ADMIN"})
+    require_roles(current_user, {"HR", "SUPERVISOR", "ADMIN"})
     return await _preview(db, current_user, "SHIFT", file)
 
 
@@ -75,7 +75,7 @@ def get_employee_template(
 def get_shift_template(
     current_user: User = Depends(get_current_user),
 ):
-    require_roles(current_user, {"SUPERVISOR", "ADMIN"})
+    require_roles(current_user, {"HR", "SUPERVISOR", "ADMIN"})
     return ImportTemplateRead(
         filename="shifts_template.csv",
         content_type="text/csv",
@@ -193,5 +193,5 @@ def _require_job_role(current_user: User, job) -> None:
     if job.import_type == "EMPLOYEE":
         allowed_roles.add("HR")
     elif job.import_type == "SHIFT":
-        allowed_roles.add("SUPERVISOR")
+        allowed_roles.update({"HR", "SUPERVISOR"})
     require_roles(current_user, allowed_roles)
