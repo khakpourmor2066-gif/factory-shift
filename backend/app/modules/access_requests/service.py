@@ -8,8 +8,15 @@ from app.modules.employees.model import Employee
 from app.modules.users.model import User
 
 
+MOBILE_DIGIT_TRANSLATION = str.maketrans(
+    "۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩",
+    "01234567890123456789",
+)
+
+
 def normalize_mobile(value: str) -> str:
-    digits = "".join(ch for ch in value if ch.isdigit())
+    normalized_value = value.translate(MOBILE_DIGIT_TRANSLATION)
+    digits = "".join(ch for ch in normalized_value if ch.isdigit())
     if digits.startswith("98") and len(digits) == 12:
         return "0" + digits[2:]
     return digits
@@ -20,10 +27,16 @@ def format_contact_text(phone_number: str) -> str:
 
 
 def extract_contact_mobile(text: str | None) -> str | None:
-    if not text or not text.startswith("CONTACT_MOBILE:"):
+    if not text:
         return None
-    mobile = normalize_mobile(text.split(":", 1)[1])
-    return mobile if mobile else None
+    stripped_text = text.strip()
+    if stripped_text.startswith("CONTACT_MOBILE:"):
+        mobile = normalize_mobile(stripped_text.split(":", 1)[1])
+    elif all(ch.isdigit() or ch in " +()-" for ch in stripped_text):
+        mobile = normalize_mobile(stripped_text)
+    else:
+        return None
+    return mobile if mobile.startswith("09") and len(mobile) == 11 else None
 
 
 def combine_pending_contact_with_code(db: Session, *, platform: str, messenger_user_id: str, text: str) -> str:
