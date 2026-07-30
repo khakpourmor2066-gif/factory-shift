@@ -27,6 +27,12 @@ def test_start_message_uses_welcome():
     result = bot_handler.resolve_user_message(None, user, "/start")
 
     assert result["type"] == "welcome"
+    assert result["text"] == (
+        "به ربات نمایش شیفت‌های کاری خوش آمدید.\n"
+        "یکی از گزینه‌های زیر را انتخاب کنید."
+    )
+    assert "فعال‌سازی" not in format_bot_response(result)
+    assert "درخواست" not in format_bot_response(result)
     assert result["reply_markup"]["inline_keyboard"][0][0]["callback_data"] == "VIEW_MY_SHIFT"
 
 

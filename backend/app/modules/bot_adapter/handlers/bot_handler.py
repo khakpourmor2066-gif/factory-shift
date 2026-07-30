@@ -147,13 +147,9 @@ def resolve_user_message(db: Session, user: User, text: str) -> dict:
     compact = normalized.replace(" ", "")
 
     if normalized in {"start", "/start"}:
-        pending_activation_count = 0
-        if db is not None:
-            pending_activation_count = len(list_pending_access_requests(db, limit=1000))
         return {
             "type": "welcome",
-            "text": "به ربات نمایش شیفت‌های کاری خوش آمدید.\nبرای فعال‌سازی، اگر دکمه «ارسال شماره تلفن» را در پایین صفحه مشاهده می‌کنید، همان را ارسال کنید.\nدر غیر این صورت، ابتدا شماره تلفن همراه را بفرستید.\nمثال:\n0912*******",
-            "data": {"pending_activation_count": pending_activation_count},
+            "text": "به ربات نمایش شیفت‌های کاری خوش آمدید.\nیکی از گزینه‌های زیر را انتخاب کنید.",
             "reply_markup": build_reply_markup(menu),
         }
 
