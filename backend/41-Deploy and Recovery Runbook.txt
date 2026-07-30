@@ -46,6 +46,8 @@ Known caveat:
 - برای استقرار پایدار، همیشه از `--env-file .env.prod` استفاده شود.
 - پیکربندی امنیتی nginx در `deployment/nginx/factory_shift_security.conf` نسخه‌گذاری می‌شود و
   با `backend/tools/apply_nginx_security.sh` به‌شکل idempotent نصب می‌شود.
+- access log خام nginx غیرفعال است تا webhook secret و ticket ورود موجود در URL
+  ثبت نشوند؛ مشاهده‌پذیری عملیاتی از structured log برنامه و metrics انجام می‌شود.
 
 Next focus:
 - نگهداری HTTPS
