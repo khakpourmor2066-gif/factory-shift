@@ -13,4 +13,13 @@ def test_supervisor_menu():
     menu = get_menu_for_role("SUPERVISOR")
 
     assert "افراد روز" in menu
-    assert "عملیات" in menu
+    assert "درخواست‌ها" not in menu
+    assert "عملیات" not in menu
+
+
+def test_management_menus_include_access_operations():
+    for role in ("HR", "ADMIN"):
+        menu = get_menu_for_role(role)
+
+        assert "درخواست‌ها" in menu
+        assert "عملیات" in menu

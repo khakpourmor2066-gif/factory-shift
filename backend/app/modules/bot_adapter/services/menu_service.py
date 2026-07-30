@@ -3,7 +3,15 @@
 
 def get_menu_for_role(role: str) -> list[str]:
     if role in {"HR", "ADMIN"}:
-        return ["برنامه شیفت من", "مشاهده افراد یک روز", "انتخاب ماه", "انتخاب تاریخ", "راهنما"]
+        return [
+            "برنامه شیفت من",
+            "مشاهده افراد یک روز",
+            "انتخاب ماه",
+            "انتخاب تاریخ",
+            "درخواست‌ها",
+            "عملیات",
+            "راهنما",
+        ]
     if role == "SUPERVISOR":
         return SUPERVISOR_MENU
     return EMPLOYEE_MENU
