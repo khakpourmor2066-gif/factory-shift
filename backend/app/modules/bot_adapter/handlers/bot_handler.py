@@ -13,7 +13,7 @@ from app.modules.access.permissions import (
 from app.modules.access_requests.service import (
     approve_access_request,
     get_access_request_report,
-    list_pending_access_requests,
+    list_pending_access_request_reviews,
     notify_access_request_result,
     reject_access_request,
 )
@@ -280,16 +280,17 @@ def get_help_text(role: str) -> str:
     )
 
 
-def build_access_requests_markup(requests: list) -> dict:
+def build_access_requests_markup(requests: list[dict]) -> dict:
     buttons = []
     for access_request in requests:
-        request_id = access_request.id
-        buttons.append(
-            [
-                {"text": f"تایید {request_id}", "callback_data": f"APPROVE_ACCESS:{request_id}"},
-                {"text": f"رد {request_id}", "callback_data": f"REJECT_ACCESS:{request_id}"},
-            ]
-        )
+        request_id = access_request["id"]
+        row = []
+        if access_request.get("can_approve"):
+            row.append(
+                {"text": f"تأیید {request_id}", "callback_data": f"APPROVE_ACCESS:{request_id}"}
+            )
+        row.append({"text": f"رد {request_id}", "callback_data": f"REJECT_ACCESS:{request_id}"})
+        buttons.append(row)
     buttons.append([{"text": "بازگشت", "callback_data": "BACK_MENU"}])
     return {"inline_keyboard": buttons}
 
@@ -504,7 +505,7 @@ def resolve_user_message(db: Session, user: User, text: str) -> dict:
     if raw_text in {"VIEW_ACCESS_REQUESTS"} or compact in {"درخواستها", "درخواست‌ها"}:
         if not can_manage_access_requests(user.role):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission denied")
-        pending_requests = list_pending_access_requests(db, limit=5)
+        pending_requests = list_pending_access_request_reviews(db, limit=5)
         return {
             "type": "access_requests",
             "data": {"requests": pending_requests},

@@ -51,12 +51,28 @@ def format_bot_response(response: dict) -> str:
             return "درخواست در انتظار وجود ندارد.\nبرای گزارش کلی از منوی «عملیات» استفاده کنید."
         lines = [
             f"درخواست‌های در انتظار: {len(requests)}",
-            "برای بررسی، دکمه تایید یا رد همان درخواست را بزنید.",
+            "فقط درخواست دارای تطبیق معتبر قابل تأیید است.",
         ]
         for access_request in requests:
-            lines.append(
-                f"#{access_request.id} · {access_request.messenger_user_id} · تعداد: {access_request.request_count}"
+            lines.extend(
+                [
+                    "",
+                    f"درخواست #{access_request['id']}",
+                    f"شناسه بله: {access_request['messenger_user_id']}",
+                    f"شماره همراه واردشده: {access_request.get('mobile') or '-'}",
+                    f"کد کارمندی واردشده: {access_request.get('personnel_code') or '-'}",
+                    f"نام کارمند: {access_request.get('employee_name') or '-'}",
+                    f"نقش ثبت‌شده: {access_request.get('employee_role') or '-'}",
+                    f"تعداد تلاش: {access_request['request_count']}",
+                    f"نتیجه تطبیق: {access_request['match_label']}",
+                ]
             )
+            registered_mobile = access_request.get("registered_mobile")
+            registered_code = access_request.get("registered_personnel_code")
+            if registered_mobile and registered_mobile != access_request.get("mobile"):
+                lines.append(f"شماره ثبت‌شده برای این کد: {registered_mobile}")
+            if registered_code and registered_code != access_request.get("personnel_code"):
+                lines.append(f"کد ثبت‌شده برای این شماره: {registered_code}")
         return "\n".join(lines)
     if response_type == "access_request_review":
         data = response.get("data", {})

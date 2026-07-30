@@ -48,7 +48,7 @@ def override_db(session):
     return _override
 
 
-def test_pending_access_requests_requires_supervisor():
+def test_pending_access_requests_requires_hr_or_admin():
     session = FakeSession(SimpleNamespace(id=1, role="EMPLOYEE", is_active=True))
     app.dependency_overrides[get_db] = override_db(session)
     client = TestClient(app)
@@ -61,7 +61,7 @@ def test_pending_access_requests_requires_supervisor():
     assert response.status_code == 403
 
 
-def test_pending_access_requests_returns_rows_for_supervisor():
+def test_pending_access_requests_returns_rows_for_hr():
     request_row = SimpleNamespace(
         id=1,
         platform="bale",
@@ -72,7 +72,7 @@ def test_pending_access_requests_returns_rows_for_supervisor():
         created_at="2026-07-27T00:00:00Z",
         updated_at="2026-07-27T00:00:00Z",
     )
-    session = FakeSession(SimpleNamespace(id=1, role="SUPERVISOR", is_active=True), [request_row])
+    session = FakeSession(SimpleNamespace(id=1, role="HR", is_active=True), [request_row])
     app.dependency_overrides[get_db] = override_db(session)
     client = TestClient(app)
 
@@ -85,7 +85,7 @@ def test_pending_access_requests_returns_rows_for_supervisor():
     assert response.json()[0]["messenger_user_id"] == "999"
 
 
-def test_access_request_report_returns_counts():
+def test_access_request_report_returns_counts_for_admin():
     request_row = SimpleNamespace(
         id=1,
         platform="bale",
@@ -96,7 +96,7 @@ def test_access_request_report_returns_counts():
         created_at="2026-07-27T00:00:00Z",
         updated_at="2026-07-27T00:00:00Z",
     )
-    session = FakeSession(SimpleNamespace(id=1, role="SUPERVISOR", is_active=True), [request_row])
+    session = FakeSession(SimpleNamespace(id=1, role="ADMIN", is_active=True), [request_row])
     app.dependency_overrides[get_db] = override_db(session)
     client = TestClient(app)
 
@@ -108,3 +108,18 @@ def test_access_request_report_returns_counts():
     assert response.status_code == 200
     assert response.json()["counts"]["pending"] == 1
     assert response.json()["total"] == 1
+
+
+def test_supervisor_cannot_read_access_requests():
+    session = FakeSession(SimpleNamespace(id=1, role="SUPERVISOR", is_active=True))
+    app.dependency_overrides[get_db] = override_db(session)
+    client = TestClient(app)
+
+    try:
+        pending_response = client.get("/access-requests/pending", headers={"X-User-Id": "1"})
+        report_response = client.get("/access-requests/report", headers={"X-User-Id": "1"})
+    finally:
+        app.dependency_overrides.clear()
+
+    assert pending_response.status_code == 403
+    assert report_response.status_code == 403

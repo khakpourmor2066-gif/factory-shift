@@ -2,6 +2,10 @@
 
 ## 2026-07-30
 
+- Expanded Bale access-request review with mobile, personnel code, employee,
+  role, attempt count, and explicit identity-match status.
+- Restricted activation-request review to HR/Admin and blocked approval unless
+  the submitted mobile and personnel code match one active employee.
 - Added persistent schedule-generation preview jobs.
 - Added HR/Admin preview, confirm, cancel, and publish APIs.
 - Added a gated Persian schedule-generation web form.

@@ -105,6 +105,92 @@ def list_pending_access_requests(db: Session, limit: int = 5) -> list[AccessRequ
     )
 
 
+def list_pending_access_request_reviews(db: Session, limit: int = 5) -> list[dict]:
+    return [
+        build_access_request_review(db, access_request)
+        for access_request in list_pending_access_requests(db, limit)
+    ]
+
+
+def build_access_request_review(db: Session, access_request: AccessRequest) -> dict:
+    review = {
+        "id": access_request.id,
+        "messenger_user_id": access_request.messenger_user_id,
+        "request_count": access_request.request_count,
+        "mobile": None,
+        "personnel_code": None,
+        "employee_name": None,
+        "employee_role": None,
+        "registered_mobile": None,
+        "registered_personnel_code": None,
+        "match_status": "identity_missing",
+        "match_label": "اطلاعات شماره همراه و کد کارمندی کامل نیست ❌",
+        "can_approve": False,
+    }
+    identity = parse_identity_text(access_request.latest_text or "")
+    if identity is None:
+        return review
+
+    mobile, personnel_code = identity
+    review["mobile"] = mobile
+    review["personnel_code"] = personnel_code
+    exact_employee = (
+        db.query(Employee)
+        .filter(Employee.mobile == mobile)
+        .filter(Employee.personnel_code == personnel_code)
+        .filter(Employee.is_active.is_(True))
+        .first()
+    )
+    if exact_employee is not None:
+        user = db.query(User).filter(User.id == exact_employee.user_id).first() if exact_employee.user_id else None
+        review.update(
+            {
+                "employee_name": f"{exact_employee.first_name} {exact_employee.last_name}",
+                "employee_role": user.role if user is not None else "EMPLOYEE",
+                "registered_mobile": exact_employee.mobile,
+                "registered_personnel_code": exact_employee.personnel_code,
+                "match_status": "matched",
+                "match_label": "شماره همراه و کد کارمندی معتبر است ✅",
+                "can_approve": True,
+            }
+        )
+        return review
+
+    employee_by_code = (
+        db.query(Employee)
+        .filter(Employee.personnel_code == personnel_code)
+        .first()
+    )
+    employee_by_mobile = db.query(Employee).filter(Employee.mobile == mobile).first()
+    reference_employee = employee_by_code or employee_by_mobile
+    if reference_employee is not None:
+        reference_user = (
+            db.query(User).filter(User.id == reference_employee.user_id).first()
+            if reference_employee.user_id
+            else None
+        )
+        review.update(
+            {
+                "employee_name": f"{reference_employee.first_name} {reference_employee.last_name}",
+                "employee_role": reference_user.role if reference_user is not None else "EMPLOYEE",
+                "registered_mobile": employee_by_code.mobile if employee_by_code is not None else None,
+                "registered_personnel_code": (
+                    employee_by_mobile.personnel_code if employee_by_mobile is not None else None
+                ),
+                "match_status": "identity_mismatch",
+                "match_label": "شماره همراه و کد کارمندی متعلق به یک فرد نیستند ❌",
+            }
+        )
+    else:
+        review.update(
+            {
+                "match_status": "employee_not_found",
+                "match_label": "کارمند در فهرست منابع انسانی پیدا نشد ❌",
+            }
+        )
+    return review
+
+
 def get_access_request(db: Session, request_id: int) -> AccessRequest | None:
     return db.query(AccessRequest).filter(AccessRequest.id == request_id).first()
 
