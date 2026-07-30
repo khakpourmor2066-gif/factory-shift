@@ -298,6 +298,46 @@ def test_help_message_is_role_specific():
     assert "تولید خودکار برنامه" in admin_result["text"]
 
 
+def test_hr_help_contains_clickable_admin_pages():
+    original_public_base_url = bot_handler.settings.public_base_url
+    try:
+        bot_handler.settings.public_base_url = "https://factory.example"
+        result = bot_handler.resolve_user_message(None, SimpleNamespace(role="HR"), "راهنما")
+    finally:
+        bot_handler.settings.public_base_url = original_public_base_url
+
+    buttons = result["reply_markup"]["inline_keyboard"]
+    assert buttons[0][0]["url"] == "https://factory.example/admin/imports"
+    assert buttons[1][0]["url"] == "https://factory.example/admin/schedule-generator"
+    assert buttons[2][0]["callback_data"] == "CREATE_WEB_ACCESS"
+
+
+def test_hr_can_create_temporary_web_access(monkeypatch):
+    user = SimpleNamespace(id=7, role="HR")
+    monkeypatch.setattr(
+        bot_handler,
+        "create_temporary_web_token",
+        lambda db, user_id, lifetime_minutes: (SimpleNamespace(id=1), "temporary-secret"),
+    )
+
+    result = bot_handler.resolve_user_message(None, user, "CREATE_WEB_ACCESS")
+
+    assert result["type"] == "help"
+    assert "۱۵ دقیقه" in result["text"]
+    assert "temporary-secret" in result["text"]
+
+
+def test_employee_cannot_create_temporary_web_access():
+    with pytest.raises(HTTPException) as exc_info:
+        bot_handler.resolve_user_message(
+            None,
+            SimpleNamespace(id=8, role="EMPLOYEE"),
+            "CREATE_WEB_ACCESS",
+        )
+
+    assert exc_info.value.status_code == 403
+
+
 def test_date_week_callback_builds_seven_day_picker():
     user = SimpleNamespace(role="SUPERVISOR")
 

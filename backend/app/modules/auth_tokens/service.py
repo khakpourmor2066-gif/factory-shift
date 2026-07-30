@@ -1,5 +1,5 @@
 import secrets
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
@@ -43,6 +43,34 @@ def create_api_token(
     db.commit()
     db.refresh(token)
     return token, raw_token
+
+
+def create_temporary_web_token(
+    db: Session,
+    user_id: int,
+    *,
+    lifetime_minutes: int = 15,
+) -> tuple[ApiToken, str]:
+    token_name = "bale-web-temporary"
+    active_tokens = (
+        db.query(ApiToken)
+        .filter(
+            ApiToken.user_id == user_id,
+            ApiToken.name == token_name,
+            ApiToken.is_active.is_(True),
+        )
+        .all()
+    )
+    for token in active_tokens:
+        token.is_active = False
+    if active_tokens:
+        db.commit()
+    return create_api_token(
+        db,
+        user_id=user_id,
+        name=token_name,
+        expires_at=datetime.now(UTC) + timedelta(minutes=lifetime_minutes),
+    )
 
 
 def authenticate_api_token(db: Session, raw_token: str):

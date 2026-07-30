@@ -16,6 +16,7 @@ class Settings(BaseModel):
     bale_bot_token: str = os.getenv("BALE_BOT_TOKEN", "")
     bale_api_base_url: str = os.getenv("BALE_API_BASE_URL", "https://tapi.bale.ai")
     bale_webhook_url: str = os.getenv("BALE_WEBHOOK_URL", "")
+    public_base_url: str = os.getenv("PUBLIC_BASE_URL", "")
     bale_send_url: str = os.getenv("BALE_SEND_URL", "")
     rubika_send_url: str = os.getenv("RUBIKA_SEND_URL", "")
     max_import_bytes: int = int(os.getenv("MAX_IMPORT_BYTES", str(5 * 1024 * 1024)))

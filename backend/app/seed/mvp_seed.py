@@ -50,6 +50,81 @@ def seed_mvp_data(db: Session) -> dict:
     }
 
 
+def seed_active_employee_schedules(
+    db: Session,
+    *,
+    start_date: date,
+    end_date: date,
+) -> dict:
+    if end_date < start_date:
+        raise ValueError("end_date must not be before start_date")
+
+    pattern = _get_or_create_pattern(db)
+    employees = (
+        db.query(Employee)
+        .filter(Employee.is_active.is_(True))
+        .order_by(Employee.id)
+        .all()
+    )
+    assignments_created = 0
+    schedules_created = 0
+    total_days = (end_date - start_date).days + 1
+
+    for employee in employees:
+        assignment = (
+            db.query(EmployeeShiftAssignment)
+            .filter(EmployeeShiftAssignment.employee_id == employee.id)
+            .filter(EmployeeShiftAssignment.pattern_id == pattern.id)
+            .filter(EmployeeShiftAssignment.start_date == start_date)
+            .first()
+        )
+        if assignment is None:
+            assignment = EmployeeShiftAssignment(
+                employee_id=employee.id,
+                pattern_id=pattern.id,
+                start_date=start_date,
+                end_date=end_date,
+            )
+            db.add(assignment)
+            assignments_created += 1
+        elif assignment.end_date is None or assignment.end_date < end_date:
+            assignment.end_date = end_date
+
+        existing_dates = {
+            row[0]
+            for row in (
+                db.query(Schedule.date)
+                .filter(Schedule.employee_id == employee.id)
+                .filter(Schedule.date >= start_date)
+                .filter(Schedule.date <= end_date)
+                .all()
+            )
+        }
+        for offset in range(total_days):
+            schedule_date = start_date + timedelta(days=offset)
+            if schedule_date in existing_dates:
+                continue
+            db.add(
+                Schedule(
+                    employee_id=employee.id,
+                    date=schedule_date,
+                    status="DAY" if (offset + employee.id) % 2 else "NIGHT",
+                    generated_from="DEMO_ROSTER_SEED",
+                    published=True,
+                )
+            )
+            schedules_created += 1
+
+    db.commit()
+    return {
+        "employee_count": len(employees),
+        "assignments_created": assignments_created,
+        "schedules_created": schedules_created,
+        "start_date": start_date.isoformat(),
+        "end_date": end_date.isoformat(),
+    }
+
+
 def _get_or_create_department(db: Session) -> Department:
     department = db.query(Department).filter(Department.name == "Operations").first()
     if department is None:

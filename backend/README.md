@@ -335,6 +335,18 @@ Approval is available only when the submitted mobile number and personnel code
 belong to the same active employee. Invalid or incomplete requests can only be
 rejected. Supervisor and Employee roles cannot access this workflow.
 
+## Demo Roster Schedules
+
+The canonical demo roster contains 14 active employees: one HR user, three
+supervisors, nine employees, and one Admin/IT user. The demo seed links three
+employees to each supervisor and creates published shift assignments for every
+active employee across the current and following month. Re-running the seed is
+idempotent and fills only missing assignments and dates.
+
+HR and Admin help messages include clickable links to the import and schedule
+generation pages. A 15-minute Bearer token can be generated from the bot and
+entered in either web form; previously issued temporary web tokens are revoked.
+
 ## Tests
 
 ```bash

@@ -4,12 +4,14 @@ import re
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.modules.access.permissions import (
     can_generate_schedule,
     can_manage_access_requests,
     can_view_own_schedule,
     can_view_supervisor_schedule,
 )
+from app.modules.auth_tokens.service import create_temporary_web_token
 from app.modules.access_requests.service import (
     approve_access_request,
     get_access_request_report,
@@ -61,6 +63,7 @@ MENU_COMMANDS = {
     "ماه قبل": "VIEW_MONTH_PREVIOUS",
     "بازگشت": "BACK_MENU",
     "خروج از حساب": "LOGOUT_REQUEST",
+    "دسترسی وب مدیریت": "CREATE_WEB_ACCESS",
 }
 
 PERSIAN_WEEKDAYS = [
@@ -120,6 +123,45 @@ def build_reply_markup(items: list[str]) -> dict:
 
 def build_back_markup() -> dict:
     return build_reply_markup(["بازگشت"])
+
+
+def get_public_base_url() -> str:
+    if settings.public_base_url:
+        return settings.public_base_url.rstrip("/")
+    webhook_url = settings.bale_webhook_url.rstrip("/")
+    marker = "/bot/"
+    if marker in webhook_url:
+        return webhook_url.split(marker, 1)[0]
+    return ""
+
+
+def build_help_markup(role: str) -> dict:
+    buttons = []
+    public_base_url = get_public_base_url()
+    if role in {"HR", "ADMIN"} and public_base_url:
+        buttons.extend(
+            [
+                [{"text": "بارگذاری کارکنان و شیفت‌ها", "url": f"{public_base_url}/admin/imports"}],
+                [{"text": "فرم وب تولید برنامه", "url": f"{public_base_url}/admin/schedule-generator"}],
+                [{"text": "دریافت توکن موقت وب", "callback_data": "CREATE_WEB_ACCESS"}],
+            ]
+        )
+    buttons.append([{"text": "بازگشت", "callback_data": "BACK_MENU"}])
+    return {"inline_keyboard": buttons}
+
+
+def build_web_access_markup() -> dict:
+    public_base_url = get_public_base_url()
+    buttons = []
+    if public_base_url:
+        buttons.extend(
+            [
+                [{"text": "بازکردن صفحه بارگذاری", "url": f"{public_base_url}/admin/imports"}],
+                [{"text": "بازکردن تولید برنامه", "url": f"{public_base_url}/admin/schedule-generator"}],
+            ]
+        )
+    buttons.append([{"text": "بازگشت به منو", "callback_data": "BACK_MENU"}])
+    return {"inline_keyboard": buttons}
 
 
 def format_date_button(target_date: date, today: date) -> str:
@@ -250,9 +292,10 @@ def get_help_text(role: str) -> str:
                 "• مشاهده افراد یک روز و انتخاب تاریخ: مشاهده برنامه روزانه نیروها.",
                 "• درخواست‌ها: تأیید یا رد درخواست‌های فعال‌سازی.",
                 "• عملیات: گزارش درخواست‌ها و سلامت webhook.",
-                "• بارگذاری کارکنان و شیفت‌ها: از صفحه وب /admin/imports با پیش‌نمایش و تأیید نهایی.",
+                "• بارگذاری کارکنان و شیفت‌ها: دکمه وب پایین پیام را بزنید؛ /admin/imports فرمان بله نیست.",
                 "• تولید برنامه: انتخاب کارمند، الگو و بازه؛ سپس تکمیل فقط برای روزهای خالی، تأیید یا انتشار.",
-                "• فرم وب تولید برنامه: /admin/schedule-generator.",
+                "• فرم وب تولید برنامه: دکمه وب پایین پیام را بزنید؛ /admin/schedule-generator فرمان بله نیست.",
+                "• برای استفاده از فرم‌ها، ابتدا «دریافت توکن موقت وب» را بزنید و توکن را در فرم وارد کنید.",
                 "• خروج از حساب: قطع اتصال حساب بله پس از تأیید.",
             ]
         )
@@ -263,8 +306,9 @@ def get_help_text(role: str) -> str:
                 "• برنامه شیفت من، انتخاب ماه، مشاهده افراد و انتخاب تاریخ: مشاهده برنامه‌ها.",
                 "• درخواست‌ها: تأیید یا رد فعال‌سازی کاربران.",
                 "• عملیات: گزارش درخواست‌ها و لاگ‌های webhook.",
-                "• مدیریت داده: بارگذاری کارکنان و شیفت‌ها در /admin/imports.",
-                "• تولید خودکار برنامه: از داخل ربات یا فرم /admin/schedule-generator.",
+                "• مدیریت داده: با دکمه وب پایین پیام؛ /admin/imports فرمان بله نیست.",
+                "• تولید خودکار برنامه: از داخل ربات یا دکمه فرم وب پایین پیام.",
+                "• برای استفاده از فرم‌ها، ابتدا «دریافت توکن موقت وب» را بزنید و توکن را در فرم وارد کنید.",
                 "• خروج از حساب: قطع اتصال حساب بله پس از تأیید.",
             ]
         )
@@ -716,7 +760,25 @@ def resolve_user_message(db: Session, user: User, text: str) -> dict:
         return {
             "type": "help",
             "text": get_help_text(user.role),
-            "reply_markup": build_back_markup(),
+            "reply_markup": build_help_markup(user.role),
+        }
+
+    if raw_text == "CREATE_WEB_ACCESS":
+        if user.role not in {"HR", "ADMIN"}:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission denied")
+        _, raw_token = create_temporary_web_token(db, user.id, lifetime_minutes=15)
+        return {
+            "type": "help",
+            "text": "\n".join(
+                [
+                    "توکن موقت مدیریت وب ایجاد شد.",
+                    "اعتبار: ۱۵ دقیقه",
+                    "توکن را کپی و در کادر Bearer Token صفحه وب وارد کنید:",
+                    raw_token,
+                    "این توکن را در اختیار دیگران قرار ندهید.",
+                ]
+            ),
+            "reply_markup": build_web_access_markup(),
         }
 
     if raw_text.startswith("SHOW_MORE_EMPLOYEE:"):

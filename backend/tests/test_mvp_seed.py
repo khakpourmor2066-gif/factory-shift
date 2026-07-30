@@ -1,3 +1,5 @@
+from datetime import date
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -6,7 +8,7 @@ from app.modules.departments.model import Department
 from app.modules.employees.model import Employee
 from app.modules.shifts.model import EmployeeShiftAssignment, Schedule, ShiftPattern, ShiftPatternDay
 from app.modules.users.model import User
-from app.seed.mvp_seed import seed_mvp_data
+from app.seed.mvp_seed import seed_active_employee_schedules, seed_mvp_data
 
 
 def create_test_session():
@@ -64,4 +66,45 @@ def test_seed_mvp_data_matches_canonical_identity_and_preserves_real_messenger_l
     assert employee.last_name == "Ahmadi"
     assert employee.mobile == "09120000005"
 
+    db.close()
+
+
+def test_seed_active_employee_schedules_covers_all_active_employees_repeatably():
+    db = create_test_session()
+    seed_mvp_data(db)
+    department = db.query(Department).one()
+    user = User(mobile="09120000006", role="EMPLOYEE", is_active=True)
+    db.add(user)
+    db.flush()
+    db.add(
+        Employee(
+            personnel_code="EMP-002",
+            first_name="Reza",
+            last_name="Jafari",
+            mobile="09120000006",
+            department_id=department.id,
+            user_id=user.id,
+            is_active=True,
+        )
+    )
+    db.commit()
+
+    first_result = seed_active_employee_schedules(
+        db,
+        start_date=date(2026, 7, 1),
+        end_date=date(2026, 7, 3),
+    )
+    second_result = seed_active_employee_schedules(
+        db,
+        start_date=date(2026, 7, 1),
+        end_date=date(2026, 7, 3),
+    )
+
+    assert first_result["employee_count"] == 3
+    assert first_result["assignments_created"] == 2
+    assert first_result["schedules_created"] == 6
+    assert second_result["assignments_created"] == 0
+    assert second_result["schedules_created"] == 0
+    assert db.query(EmployeeShiftAssignment).count() == 3
+    assert db.query(Schedule).count() == 37
     db.close()
