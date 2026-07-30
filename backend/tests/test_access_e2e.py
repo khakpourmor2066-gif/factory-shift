@@ -81,3 +81,37 @@ def test_contact_then_personnel_code_activates_user(tmp_path: Path, monkeypatch)
     assert user is not None
     assert sent_messages[0][2] is None
     db.close()
+
+
+def test_typed_mobile_then_personnel_code_activates_user(tmp_path: Path, monkeypatch):
+    db = create_test_session()
+    csv_path = tmp_path / "hr.csv"
+    csv_path.write_text(
+        "personnel_code,first_name,last_name,mobile,role\n"
+        "EMP-202,Mina,Worker,09120000202,EMPLOYEE\n",
+        encoding="utf-8",
+    )
+    sent_messages = []
+
+    monkeypatch.setattr(
+        "app.modules.bot_adapter.services.bale_webhook_service.try_send_bale_message",
+        lambda bot_adapter, user_id, text, reply_markup=None: sent_messages.append((user_id, text, reply_markup)) or True,
+    )
+
+    import_hr_employees_csv(db, csv_path)
+    contact_result = resolve_bale_webhook_message(
+        db,
+        {"message": {"chat": {"id": 1002}, "text": "09120000202"}},
+    )
+    approval_result = resolve_bale_webhook_message(
+        db,
+        {"message": {"chat": {"id": 1002}, "text": "EMP-202"}},
+    )
+    user = db.query(User).filter(User.messenger_user_id == "1002").first()
+
+    assert contact_result["status"] == "contact_received"
+    assert contact_result["contact_mobile"] == "09120000202"
+    assert approval_result["status"] == "access_approved"
+    assert user is not None
+    assert "شماره تلفن همراه دریافت شد." in sent_messages[0][1]
+    db.close()

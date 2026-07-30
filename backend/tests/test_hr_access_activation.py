@@ -3,11 +3,12 @@ from sqlalchemy.orm import sessionmaker
 
 from app.database.connection import Base
 from app.modules.access_requests.model import AccessRequest
-from app.modules.access_requests.model import AccessRequest
 from app.modules.access_requests.service import (
     activate_access_by_hr_identity,
     combine_pending_contact_with_code,
+    extract_contact_mobile,
     format_contact_text,
+    normalize_mobile,
     parse_identity_text,
 )
 from app.modules.departments.model import Department
@@ -26,6 +27,18 @@ def test_parse_identity_text_extracts_mobile_and_personnel_code():
     assert parse_identity_text("ثبت 09120000002 EMP-001") == ("09120000002", "EMP-001")
 
 
+def test_typed_mobile_is_accepted_as_contact():
+    assert extract_contact_mobile("09120000002") == "09120000002"
+    assert extract_contact_mobile("۰۹۱۲۰۰۰۰۰۰۲") == "09120000002"
+    assert normalize_mobile("+۹۸۹۱۲۰۰۰۰۰۰۲") == "09120000002"
+
+
+def test_non_mobile_text_is_not_accepted_as_contact():
+    assert extract_contact_mobile("EMP-001") is None
+    assert extract_contact_mobile("شماره 09120000002") is None
+    assert extract_contact_mobile("0912") is None
+
+
 def test_contact_text_is_combined_with_personnel_code():
     db = create_test_session()
     db.add(
@@ -33,6 +46,30 @@ def test_contact_text_is_combined_with_personnel_code():
             platform="bale",
             messenger_user_id="999",
             latest_text=format_contact_text("+989120000002"),
+            status="pending",
+            request_count=1,
+        )
+    )
+    db.commit()
+
+    combined_text = combine_pending_contact_with_code(
+        db,
+        platform="bale",
+        messenger_user_id="999",
+        text="EMP-001",
+    )
+
+    assert combined_text == "ثبت 09120000002 EMP-001"
+    db.close()
+
+
+def test_typed_mobile_is_combined_with_personnel_code():
+    db = create_test_session()
+    db.add(
+        AccessRequest(
+            platform="bale",
+            messenger_user_id="999",
+            latest_text="09120000002",
             status="pending",
             request_count=1,
         )

@@ -17,6 +17,8 @@
   restore-verification tools.
 - Upgraded FastAPI, Starlette, and python-multipart to remove known dependency
   vulnerabilities and added dependency auditing to CI.
+- Fixed two-step Bale activation so a manually typed mobile number, including
+  Persian or Arabic digits, is accepted before the personnel code.
 
 ## 2026-07-28
 
