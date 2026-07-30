@@ -20,7 +20,8 @@ Deploy sequence:
 4. `docker compose --env-file .env.prod -f docker-compose.prod.yml up -d --build --no-deps backend`
 5. `bash backend/tools/smoke_prod_server.sh https://213.176.6.200.nip.io`
 6. `bash backend/tools/smoke_import_server.sh https://213.176.6.200.nip.io`
-7. revision مستقرشده را فقط پس از موفقیت smoke در `.deployed_revision` ثبت کن.
+7. `bash backend/tools/apply_nginx_security.sh`
+8. revision مستقرشده را فقط پس از موفقیت smoke در `.deployed_revision` ثبت کن.
 
 Backup verification:
 1. مسیر فایل `database_backup` را از خروجی ابزار backup بردار.
@@ -43,6 +44,8 @@ Recovery sequence:
 Known caveat:
 - اگر `docker compose` بدون `--env-file .env.prod` اجرا شود، warningهای `POSTGRES_PASSWORD` و `BOT_WEBHOOK_SECRET` ظاهر می‌شوند.
 - برای استقرار پایدار، همیشه از `--env-file .env.prod` استفاده شود.
+- پیکربندی امنیتی nginx در `deployment/nginx/factory_shift_security.conf` نسخه‌گذاری می‌شود و
+  با `backend/tools/apply_nginx_security.sh` به‌شکل idempotent نصب می‌شود.
 
 Next focus:
 - نگهداری HTTPS
