@@ -29,6 +29,12 @@ def generate_schedule(db: Session, request: ScheduleGenerateRequest):
     assignment = get_assignment(db, request.assignment_id)
     if assignment is None:
         raise ValueError("assignment not found")
+    if assignment.employee_id != request.employee_id:
+        raise ValueError("assignment does not belong to employee")
+    if request.from_date < assignment.start_date:
+        raise ValueError("from_date cannot be before assignment start_date")
+    if assignment.end_date is not None and request.to_date > assignment.end_date:
+        raise ValueError("to_date cannot be after assignment end_date")
     pattern_days = get_pattern_days(db, assignment.pattern_id)
     records = generate_schedule_records(
         assignment=assignment,
@@ -37,7 +43,19 @@ def generate_schedule(db: Session, request: ScheduleGenerateRequest):
         to_date=request.to_date,
         publish=request.publish,
     )
-    return save_schedules(db, records)
+    existing_dates = {
+        schedule.date
+        for schedule in list_employee_schedule(
+            db,
+            request.employee_id,
+            request.from_date,
+            request.to_date,
+        )
+    }
+    missing_records = [record for record in records if record.date not in existing_dates]
+    if not missing_records:
+        return []
+    return save_schedules(db, missing_records)
 
 
 def get_schedule(db: Session, employee_id: int, from_date, to_date):

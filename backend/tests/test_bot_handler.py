@@ -157,7 +157,8 @@ def test_date_help_message_is_detected():
     result = bot_handler.resolve_user_message(None, user, "انتخاب تاریخ")
 
     assert result["type"] == "date_help"
-    assert result["text"] == "تاریخ را انتخاب کنید یا YYYY-MM-DD بنویسید."
+    assert "یکی از روزهای زیر" in result["text"]
+    assert "هفته را جابه‌جا کنید" in result["text"]
 
 
 def test_month_help_message_is_detected():
@@ -278,12 +279,53 @@ def test_logout_confirmation_unlinks_current_user(monkeypatch):
 def test_help_message_is_role_specific():
     employee = SimpleNamespace(role="EMPLOYEE")
     supervisor = SimpleNamespace(role="SUPERVISOR")
+    hr = SimpleNamespace(role="HR")
+    admin = SimpleNamespace(role="ADMIN")
 
     employee_result = bot_handler.resolve_user_message(None, employee, "راهنما")
     supervisor_result = bot_handler.resolve_user_message(None, supervisor, "راهنما")
+    hr_result = bot_handler.resolve_user_message(None, hr, "راهنما")
+    admin_result = bot_handler.resolve_user_message(None, admin, "راهنما")
 
-    assert employee_result["text"] == "برای دیدن برنامه خود، «برنامه من» را بزنید."
-    assert supervisor_result["text"] == "برای مشاهده افراد روز، «افراد روز» را بزنید."
+    assert "راهنمای کارمند" in employee_result["text"]
+    assert "برنامه من" in employee_result["text"]
+    assert "راهنمای سرپرست" in supervisor_result["text"]
+    assert "۷ روز" in supervisor_result["text"]
+    assert "راهنمای منابع انسانی" in hr_result["text"]
+    assert "/admin/imports" in hr_result["text"]
+    assert "راهنمای مدیر سیستم" in admin_result["text"]
+    assert "تولید خودکار برنامه" in admin_result["text"]
+
+
+def test_date_week_callback_builds_seven_day_picker():
+    user = SimpleNamespace(role="SUPERVISOR")
+
+    result = bot_handler.resolve_user_message(None, user, "DATE_WEEK:2026-08-06")
+
+    buttons = result["reply_markup"]["inline_keyboard"]
+    assert result["type"] == "date_help"
+    assert len(buttons) == 9
+    assert buttons[0][0]["callback_data"] == "VIEW_DATE:2026-08-06"
+    assert buttons[6][0]["callback_data"] == "VIEW_DATE:2026-08-12"
+    assert buttons[7][0]["callback_data"] == "DATE_WEEK:2026-07-30"
+    assert buttons[7][1]["callback_data"] == "DATE_WEEK:2026-08-13"
+
+
+def test_selected_date_has_previous_next_and_date_picker_actions(monkeypatch):
+    user = SimpleNamespace(role="SUPERVISOR")
+
+    def fake_get_supervisor_schedule(db, current_user, target_date):
+        return {"date": target_date, "employees": []}
+
+    monkeypatch.setattr(bot_handler, "get_supervisor_schedule", fake_get_supervisor_schedule)
+
+    result = bot_handler.resolve_user_message(None, user, "VIEW_DATE:2026-08-06")
+    buttons = result["reply_markup"]["inline_keyboard"]
+
+    assert result["type"] == "supervisor_schedule"
+    assert buttons[0][0]["callback_data"] == "VIEW_DATE:2026-08-05"
+    assert buttons[0][1]["callback_data"] == "VIEW_DATE:2026-08-07"
+    assert buttons[1][0]["callback_data"] == "SELECT_DATE"
 
 
 def test_identity_missing_message_is_short_and_step_based():
