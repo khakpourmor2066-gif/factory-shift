@@ -19,8 +19,6 @@
   vulnerabilities and added dependency auditing to CI.
 - Fixed two-step Bale activation so a manually typed mobile number, including
   Persian or Arabic digits, is accepted before the personnel code.
-- Added a guarded Bale protocol journey tool and an isolated Chrome launcher
-  for combined API and real-user interface testing.
 
 ## 2026-07-28
 
