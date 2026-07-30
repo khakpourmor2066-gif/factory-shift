@@ -11,6 +11,7 @@ from app.modules.data_imports.model import ImportError, ImportJob
 from app.modules.departments.model import Department
 from app.modules.employees.model import Employee
 from app.modules.shifts.model import EmployeeShiftAssignment, Schedule, ShiftPattern, ShiftPatternDay
+from app.modules.schedule_generation.model import ScheduleGenerationJob
 from app.modules.users.model import User
 from app.modules.webhook_logs.model import WebhookLog
 

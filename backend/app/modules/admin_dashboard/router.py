@@ -43,6 +43,11 @@ def admin_dashboard_endpoint(
         f"<li>{escape(action)}: {count}</li>"
         for action, count in sorted(audit_counts.items(), key=lambda item: item[1], reverse=True)[:5]
     )
+    schedule_generator_link = (
+        '<p><a href="/admin/schedule-generator">تولید و انتشار برنامه شیفت</a></p>'
+        if current_user.role in {"HR", "ADMIN"}
+        else ""
+    )
 
     html = f"""
     <html lang="fa" dir="rtl">
@@ -60,6 +65,7 @@ def admin_dashboard_endpoint(
       <body>
         <h1>داشبورد مدیریتی</h1>
         <p><a href="/admin/imports">ورود کارکنان و برنامه شیفت</a></p>
+        {schedule_generator_link}
         <div class="grid">
           <div class="card">
             <h2>درخواست‌ها</h2>
@@ -248,6 +254,251 @@ def import_dashboard_endpoint():
               URL.revokeObjectURL(link.href);
             } catch (_) {}
           });
+        </script>
+      </body>
+    </html>
+    """
+    return HTMLResponse(
+        content=html,
+        headers={
+            "Cache-Control": "no-store",
+            "Content-Security-Policy": (
+                "default-src 'self'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; "
+                "connect-src 'self'; object-src 'none'; base-uri 'none'"
+            ),
+        },
+    )
+
+
+@router.get("/schedule-generator", response_class=HTMLResponse, include_in_schema=False)
+def schedule_generator_dashboard_endpoint():
+    html = """
+    <html lang="fa" dir="rtl">
+      <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>تولید برنامه شیفت</title>
+        <style>
+          body { font-family: sans-serif; margin: 24px; line-height: 1.8; background: #f6f7f9; color: #222; }
+          main { max-width: 1050px; margin: auto; }
+          .card { background: white; border: 1px solid #ddd; border-radius: 12px; padding: 18px; margin: 14px 0; }
+          .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+          label { display: block; margin: 8px 0 4px; font-weight: bold; }
+          input, select, button { font: inherit; padding: 9px; box-sizing: border-box; }
+          input, select { width: 100%; }
+          button { cursor: pointer; border: 1px solid #aaa; border-radius: 8px; margin: 4px; }
+          button:disabled { cursor: not-allowed; opacity: .5; }
+          button.primary { background: #087f5b; color: white; border-color: #087f5b; }
+          button.publish { background: #1864ab; color: white; border-color: #1864ab; }
+          button.danger { background: #c92a2a; color: white; border-color: #c92a2a; }
+          .hint { color: #555; }
+          .summary { display: flex; flex-wrap: wrap; gap: 10px; }
+          .badge { background: #edf2ff; border-radius: 999px; padding: 5px 12px; }
+          table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+          th { background: #f1f3f5; }
+          #message { white-space: pre-wrap; border-radius: 8px; padding: 10px; background: #f8f9fa; }
+          .error { color: #c92a2a; }
+        </style>
+      </head>
+      <body>
+        <main>
+          <p><a href="/admin/dashboard">بازگشت به داشبورد</a> · <a href="/admin/imports">ورود فایل</a></p>
+          <h1>تولید و انتشار برنامه شیفت</h1>
+          <p class="hint">این صفحه فقط با توکن نقش HR یا Admin کار می‌کند. توکن در مرورگر ذخیره نمی‌شود.</p>
+          <section class="card">
+            <label for="token">Bearer Token</label>
+            <input id="token" type="password" autocomplete="off" />
+            <button class="primary" id="loadOptions">دریافت کارکنان و الگوها</button>
+          </section>
+          <section class="card">
+            <div class="grid">
+              <div>
+                <label for="employee">کارمند</label>
+                <select id="employee" disabled></select>
+              </div>
+              <div>
+                <label for="assignment">الگوی اختصاص‌یافته</label>
+                <select id="assignment" disabled></select>
+              </div>
+              <div>
+                <label for="fromDate">از تاریخ</label>
+                <input id="fromDate" type="date" />
+              </div>
+              <div>
+                <label for="toDate">تا تاریخ</label>
+                <input id="toDate" type="date" />
+              </div>
+            </div>
+            <button class="primary" id="preview" disabled>مشاهده پیش‌نمایش</button>
+          </section>
+          <section class="card">
+            <div class="summary">
+              <span class="badge">Job: <strong id="jobId">-</strong></span>
+              <span class="badge">وضعیت: <strong id="status">-</strong></span>
+              <span class="badge">کل بازه: <strong id="totalDays">0</strong></span>
+              <span class="badge">روز موجود: <strong id="existingDays">0</strong></span>
+              <span class="badge">روز قابل تکمیل: <strong id="missingDays">0</strong></span>
+            </div>
+            <p id="message">هنوز پیش‌نمایشی ایجاد نشده است.</p>
+            <div>
+              <button class="primary" id="confirm" disabled>تأیید و ذخیره پیش‌نویس</button>
+              <button class="publish" id="publish" disabled>انتشار برنامه</button>
+              <button class="danger" id="cancel" disabled>لغو</button>
+            </div>
+            <table>
+              <thead><tr><th>تاریخ</th><th>وضعیت پیشنهادی</th></tr></thead>
+              <tbody id="previewRows"><tr><td colspan="2">موردی وجود ندارد</td></tr></tbody>
+            </table>
+          </section>
+        </main>
+        <script>
+          const tokenInput = document.getElementById("token");
+          const employeeInput = document.getElementById("employee");
+          const assignmentInput = document.getElementById("assignment");
+          const fromDateInput = document.getElementById("fromDate");
+          const toDateInput = document.getElementById("toDate");
+          const previewButton = document.getElementById("preview");
+          const confirmButton = document.getElementById("confirm");
+          const publishButton = document.getElementById("publish");
+          const cancelButton = document.getElementById("cancel");
+          const message = document.getElementById("message");
+          let employees = [];
+          let currentJobId = null;
+
+          function headers() {
+            return {
+              "Authorization": `Bearer ${tokenInput.value.trim()}`,
+              "Content-Type": "application/json"
+            };
+          }
+
+          function setDefaultDates() {
+            const today = new Date();
+            const nextWeek = new Date(today);
+            nextWeek.setDate(today.getDate() + 6);
+            fromDateInput.value = today.toISOString().slice(0, 10);
+            toDateInput.value = nextWeek.toISOString().slice(0, 10);
+          }
+
+          function showError(error) {
+            message.className = "error";
+            message.textContent = error.message || String(error);
+          }
+
+          async function request(path, options = {}) {
+            const response = await fetch(path, options);
+            const payload = await response.json();
+            if (!response.ok) throw new Error(payload.detail || "درخواست ناموفق بود.");
+            return payload;
+          }
+
+          function updateAssignments() {
+            const employee = employees.find(item => String(item.id) === employeeInput.value);
+            assignmentInput.innerHTML = "";
+            for (const assignment of (employee?.assignments || [])) {
+              const option = document.createElement("option");
+              option.value = assignment.id;
+              const endDate = assignment.end_date || "بدون پایان";
+              option.textContent = `${assignment.pattern_name} · ${assignment.start_date} تا ${endDate}`;
+              assignmentInput.appendChild(option);
+            }
+            assignmentInput.disabled = !assignmentInput.options.length;
+            previewButton.disabled = assignmentInput.disabled;
+          }
+
+          function renderJob(job) {
+            currentJobId = job.id;
+            document.getElementById("jobId").textContent = job.id;
+            document.getElementById("status").textContent = job.status;
+            document.getElementById("totalDays").textContent = job.total_days;
+            document.getElementById("existingDays").textContent = job.existing_days;
+            document.getElementById("missingDays").textContent = job.missing_days;
+            const rows = document.getElementById("previewRows");
+            rows.innerHTML = "";
+            if (!job.preview.length) {
+              rows.innerHTML = '<tr><td colspan="2">تمام روزهای این بازه از قبل برنامه دارند.</td></tr>';
+            } else {
+              for (const item of job.preview) {
+                const row = document.createElement("tr");
+                const dateCell = document.createElement("td");
+                const statusCell = document.createElement("td");
+                dateCell.textContent = item.date;
+                statusCell.textContent = item.status;
+                row.appendChild(dateCell);
+                row.appendChild(statusCell);
+                rows.appendChild(row);
+              }
+            }
+            const pending = job.status === "PENDING";
+            confirmButton.disabled = !pending;
+            cancelButton.disabled = !pending;
+            publishButton.disabled = !["PENDING", "CONFIRMED"].includes(job.status);
+            message.className = "";
+            message.textContent = job.status === "PENDING"
+              ? "پیش‌نمایش آماده است. ذخیره پیش‌نویس، انتشار مستقیم یا لغو را انتخاب کنید."
+              : `عملیات با وضعیت ${job.status} تکمیل شد. تعداد برنامه ایجادشده: ${job.created_schedules}`;
+          }
+
+          document.getElementById("loadOptions").addEventListener("click", async () => {
+            if (!tokenInput.value.trim()) return showError(new Error("توکن الزامی است."));
+            try {
+              const payload = await request("/schedule-generation/options", {headers: headers()});
+              employees = payload.employees;
+              employeeInput.innerHTML = "";
+              for (const employee of employees) {
+                const option = document.createElement("option");
+                option.value = employee.id;
+                option.textContent = `${employee.personnel_code} · ${employee.full_name}`;
+                employeeInput.appendChild(option);
+              }
+              employeeInput.disabled = !employees.length;
+              updateAssignments();
+              message.className = "";
+              message.textContent = employees.length
+                ? "کارمند، الگو و بازه را انتخاب کنید."
+                : "هیچ کارمند دارای Assignment فعال پیدا نشد.";
+            } catch (error) { showError(error); }
+          });
+
+          employeeInput.addEventListener("change", updateAssignments);
+
+          previewButton.addEventListener("click", async () => {
+            const employeeId = Number(employeeInput.value);
+            const assignmentId = Number(assignmentInput.value);
+            if (!employeeId || !assignmentId || !fromDateInput.value || !toDateInput.value) {
+              return showError(new Error("انتخاب کارمند، الگو و بازه تاریخ الزامی است."));
+            }
+            try {
+              const job = await request("/schedule-generation/preview", {
+                method: "POST",
+                headers: headers(),
+                body: JSON.stringify({
+                  employee_id: employeeId,
+                  assignment_id: assignmentId,
+                  from_date: fromDateInput.value,
+                  to_date: toDateInput.value
+                })
+              });
+              renderJob(job);
+            } catch (error) { showError(error); }
+          });
+
+          async function transition(action) {
+            if (!currentJobId) return;
+            try {
+              const job = await request(`/schedule-generation/${currentJobId}/${action}`, {
+                method: "POST",
+                headers: headers()
+              });
+              renderJob(job);
+            } catch (error) { showError(error); }
+          }
+
+          confirmButton.addEventListener("click", () => transition("confirm"));
+          publishButton.addEventListener("click", () => transition("publish"));
+          cancelButton.addEventListener("click", () => transition("cancel"));
+          setDefaultDates();
         </script>
       </body>
     </html>

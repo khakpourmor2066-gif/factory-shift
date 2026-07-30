@@ -17,3 +17,7 @@ def can_view_supervisor_schedule(role: str) -> bool:
 
 def can_manage_access_requests(role: str) -> bool:
     return role in MANAGEMENT_ROLES
+
+
+def can_generate_schedule(role: str) -> bool:
+    return role in MANAGEMENT_ROLES

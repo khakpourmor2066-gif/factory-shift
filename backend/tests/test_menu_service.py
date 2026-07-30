@@ -25,4 +25,5 @@ def test_management_menus_include_access_operations():
 
         assert "درخواست‌ها" in menu
         assert "عملیات" in menu
+        assert "تولید برنامه" in menu
         assert "خروج از حساب" in menu

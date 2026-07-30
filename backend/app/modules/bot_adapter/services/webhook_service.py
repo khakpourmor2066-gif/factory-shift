@@ -126,6 +126,8 @@ def format_bot_response(response: dict) -> str:
         )
     if response_type in {"logout_confirmation", "logged_out"}:
         return response.get("text", "")
+    if response_type.startswith("schedule_generation_"):
+        return response.get("text", "")
     if response_type == "employee_schedule":
         data = response.get("data", {})
         days = data.get("days", [])
