@@ -292,13 +292,13 @@ def test_help_message_is_role_specific():
     assert "راهنمای سرپرست" in supervisor_result["text"]
     assert "۷ روز" in supervisor_result["text"]
     assert "راهنمای منابع انسانی" in hr_result["text"]
-    assert "/admin/imports" in hr_result["text"]
+    assert "ورود امن به پیشخوان وب" in hr_result["text"]
     assert "فقط برای روزهای خالی" in hr_result["text"]
     assert "راهنمای مدیر سیستم" in admin_result["text"]
-    assert "تولید خودکار برنامه" in admin_result["text"]
+    assert "مدیریت داده و تولید برنامه وب" in admin_result["text"]
 
 
-def test_hr_help_contains_clickable_admin_pages():
+def test_hr_help_contains_secure_web_login_action():
     original_public_base_url = bot_handler.settings.public_base_url
     try:
         bot_handler.settings.public_base_url = "https://factory.example"
@@ -307,24 +307,26 @@ def test_hr_help_contains_clickable_admin_pages():
         bot_handler.settings.public_base_url = original_public_base_url
 
     buttons = result["reply_markup"]["inline_keyboard"]
-    assert buttons[0][0]["url"] == "https://factory.example/admin/imports"
-    assert buttons[1][0]["url"] == "https://factory.example/admin/schedule-generator"
-    assert buttons[2][0]["callback_data"] == "CREATE_WEB_ACCESS"
+    assert buttons[0][0]["callback_data"] == "CREATE_WEB_ACCESS"
 
 
-def test_hr_can_create_temporary_web_access(monkeypatch):
+def test_hr_can_create_one_time_web_login(monkeypatch):
     user = SimpleNamespace(id=7, role="HR")
     monkeypatch.setattr(
         bot_handler,
-        "create_temporary_web_token",
-        lambda db, user_id, lifetime_minutes: (SimpleNamespace(id=1), "temporary-secret"),
+        "create_web_login_ticket",
+        lambda db, user_id, lifetime_minutes: (SimpleNamespace(id=1), "one-time-ticket"),
     )
+    monkeypatch.setattr(bot_handler.settings, "public_base_url", "https://factory.example")
 
     result = bot_handler.resolve_user_message(None, user, "CREATE_WEB_ACCESS")
 
     assert result["type"] == "help"
-    assert "۱۵ دقیقه" in result["text"]
-    assert "temporary-secret" in result["text"]
+    assert "۵ دقیقه" in result["text"]
+    assert "one-time-ticket" not in result["text"]
+    assert result["reply_markup"]["inline_keyboard"][0][0]["url"] == (
+        "https://factory.example/admin/session/one-time-ticket"
+    )
 
 
 def test_employee_cannot_create_temporary_web_access():

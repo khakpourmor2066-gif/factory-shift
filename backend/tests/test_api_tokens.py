@@ -9,7 +9,6 @@ from app.database.connection import Base, get_db
 from app.core.config import settings
 from app.main import app
 from app.modules.auth_tokens.model import ApiToken
-from app.modules.auth_tokens.service import authenticate_api_token, create_temporary_web_token
 from app.modules.users.model import User
 
 
@@ -124,19 +123,4 @@ def test_legacy_header_can_be_disabled_after_bootstrap():
         assert bearer.status_code == 200
     finally:
         settings.allow_legacy_user_header = original_setting
-        close_client(db)
-
-
-def test_temporary_web_token_replaces_previous_active_token():
-    client, db, user = create_client()
-    try:
-        first_token, first_raw_token = create_temporary_web_token(db, user.id)
-        second_token, second_raw_token = create_temporary_web_token(db, user.id)
-
-        db.refresh(first_token)
-        assert first_token.is_active is False
-        assert second_token.is_active is True
-        assert authenticate_api_token(db, first_raw_token) is None
-        assert authenticate_api_token(db, second_raw_token).id == second_token.id
-    finally:
         close_client(db)

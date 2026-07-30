@@ -11,7 +11,7 @@ from app.modules.access.permissions import (
     can_view_own_schedule,
     can_view_supervisor_schedule,
 )
-from app.modules.auth_tokens.service import create_temporary_web_token
+from app.modules.auth_tokens.service import create_web_login_ticket
 from app.modules.access_requests.service import (
     approve_access_request,
     get_access_request_report,
@@ -139,25 +139,23 @@ def build_help_markup(role: str) -> dict:
     buttons = []
     public_base_url = get_public_base_url()
     if role in {"HR", "ADMIN"} and public_base_url:
-        buttons.extend(
-            [
-                [{"text": "بارگذاری کارکنان و شیفت‌ها", "url": f"{public_base_url}/admin/imports"}],
-                [{"text": "فرم وب تولید برنامه", "url": f"{public_base_url}/admin/schedule-generator"}],
-                [{"text": "دریافت توکن موقت وب", "callback_data": "CREATE_WEB_ACCESS"}],
-            ]
+        buttons.append(
+            [{"text": "ورود امن به پیشخوان وب", "callback_data": "CREATE_WEB_ACCESS"}]
         )
     buttons.append([{"text": "بازگشت", "callback_data": "BACK_MENU"}])
     return {"inline_keyboard": buttons}
 
 
-def build_web_access_markup() -> dict:
+def build_web_access_markup(raw_ticket: str) -> dict:
     public_base_url = get_public_base_url()
     buttons = []
     if public_base_url:
-        buttons.extend(
+        buttons.append(
             [
-                [{"text": "بازکردن صفحه بارگذاری", "url": f"{public_base_url}/admin/imports"}],
-                [{"text": "بازکردن تولید برنامه", "url": f"{public_base_url}/admin/schedule-generator"}],
+                {
+                    "text": "بازکردن پیشخوان مدیریت",
+                    "url": f"{public_base_url}/admin/session/{raw_ticket}",
+                }
             ]
         )
     buttons.append([{"text": "بازگشت به منو", "callback_data": "BACK_MENU"}])
@@ -292,10 +290,10 @@ def get_help_text(role: str) -> str:
                 "• مشاهده افراد یک روز و انتخاب تاریخ: مشاهده برنامه روزانه نیروها.",
                 "• درخواست‌ها: تأیید یا رد درخواست‌های فعال‌سازی.",
                 "• عملیات: گزارش درخواست‌ها و سلامت webhook.",
-                "• بارگذاری کارکنان و شیفت‌ها: دکمه وب پایین پیام را بزنید؛ /admin/imports فرمان بله نیست.",
+                "• بارگذاری کارکنان و شیفت‌ها: از «ورود امن به پیشخوان وب» استفاده کنید.",
                 "• تولید برنامه: انتخاب کارمند، الگو و بازه؛ سپس تکمیل فقط برای روزهای خالی، تأیید یا انتشار.",
-                "• فرم وب تولید برنامه: دکمه وب پایین پیام را بزنید؛ /admin/schedule-generator فرمان بله نیست.",
-                "• برای استفاده از فرم‌ها، ابتدا «دریافت توکن موقت وب» را بزنید و توکن را در فرم وارد کنید.",
+                "• فرم وب تولید برنامه: پس از ورود به پیشخوان، بدون واردکردن توکن باز می‌شود.",
+                "• لینک ورود فقط یک‌بار و تا ۵ دقیقه معتبر است؛ نشست مرورگر ۸ ساعت اعتبار دارد.",
                 "• خروج از حساب: قطع اتصال حساب بله پس از تأیید.",
             ]
         )
@@ -306,9 +304,8 @@ def get_help_text(role: str) -> str:
                 "• برنامه شیفت من، انتخاب ماه، مشاهده افراد و انتخاب تاریخ: مشاهده برنامه‌ها.",
                 "• درخواست‌ها: تأیید یا رد فعال‌سازی کاربران.",
                 "• عملیات: گزارش درخواست‌ها و لاگ‌های webhook.",
-                "• مدیریت داده: با دکمه وب پایین پیام؛ /admin/imports فرمان بله نیست.",
-                "• تولید خودکار برنامه: از داخل ربات یا دکمه فرم وب پایین پیام.",
-                "• برای استفاده از فرم‌ها، ابتدا «دریافت توکن موقت وب» را بزنید و توکن را در فرم وارد کنید.",
+                "• مدیریت داده و تولید برنامه وب: از «ورود امن به پیشخوان وب» استفاده کنید.",
+                "• لینک ورود فقط یک‌بار و تا ۵ دقیقه معتبر است؛ نشست مرورگر ۸ ساعت اعتبار دارد.",
                 "• خروج از حساب: قطع اتصال حساب بله پس از تأیید.",
             ]
         )
@@ -766,19 +763,20 @@ def resolve_user_message(db: Session, user: User, text: str) -> dict:
     if raw_text == "CREATE_WEB_ACCESS":
         if user.role not in {"HR", "ADMIN"}:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission denied")
-        _, raw_token = create_temporary_web_token(db, user.id, lifetime_minutes=15)
+        if not get_public_base_url():
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="public web URL is unavailable")
+        _, raw_ticket = create_web_login_ticket(db, user.id, lifetime_minutes=5)
         return {
             "type": "help",
             "text": "\n".join(
                 [
-                    "توکن موقت مدیریت وب ایجاد شد.",
-                    "اعتبار: ۱۵ دقیقه",
-                    "توکن را کپی و در کادر Bearer Token صفحه وب وارد کنید:",
-                    raw_token,
-                    "این توکن را در اختیار دیگران قرار ندهید.",
+                    "لینک ورود امن به پیشخوان آماده شد.",
+                    "این لینک فقط یک‌بار و تا ۵ دقیقه معتبر است.",
+                    "پس از ورود، نشست مرورگر تا ۸ ساعت فعال می‌ماند.",
+                    "لینک را در اختیار دیگران قرار ندهید.",
                 ]
             ),
-            "reply_markup": build_web_access_markup(),
+            "reply_markup": build_web_access_markup(raw_ticket),
         }
 
     if raw_text.startswith("SHOW_MORE_EMPLOYEE:"):

@@ -347,9 +347,10 @@ Daily staff visibility is role-aware: HR and Admin see every active employee
 with a published schedule for the selected date, while Supervisors see only
 their direct reports.
 
-HR and Admin help messages include clickable links to the import and schedule
-generation pages. A 15-minute Bearer token can be generated from the bot and
-entered in either web form; previously issued temporary web tokens are revoked.
+HR and Admin users request a one-time web-login link from Bale. The link is
+valid for five minutes and one use, then creates an eight-hour `HttpOnly`,
+`Secure`, `SameSite=Strict` browser session. The forms use that session
+automatically; manual Bearer tokens remain an optional fallback.
 
 ## Tests
 

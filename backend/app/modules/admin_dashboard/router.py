@@ -64,6 +64,9 @@ def admin_dashboard_endpoint(
       </head>
       <body>
         <h1>داشبورد مدیریتی</h1>
+        <form method="post" action="/admin/session/logout">
+          <button type="submit">خروج از پیشخوان وب</button>
+        </form>
         <p><a href="/admin/imports">ورود کارکنان و برنامه شیفت</a></p>
         {schedule_generator_link}
         <div class="grid">
@@ -133,9 +136,9 @@ def import_dashboard_endpoint():
       <body>
         <main>
           <h1>ورود کارکنان و برنامه شیفت</h1>
-          <p class="hint">توکن فقط در حافظه همین صفحه استفاده می‌شود و ذخیره نمی‌شود.</p>
+          <p class="hint">اگر از لینک امن ربات وارد شده‌اید، نیازی به واردکردن توکن نیست.</p>
           <section class="card">
-            <label for="token">Bearer Token</label>
+            <label for="token">Bearer Token دستی (اختیاری)</label>
             <input id="token" type="password" autocomplete="off" />
             <label for="importType">نوع فایل</label>
             <select id="importType">
@@ -169,7 +172,8 @@ def import_dashboard_endpoint():
           let currentJobId = null;
 
           function headers() {
-            return { "Authorization": `Bearer ${tokenInput.value.trim()}` };
+            const token = tokenInput.value.trim();
+            return token ? { "Authorization": `Bearer ${token}` } : {};
           }
 
           function show(payload) {
@@ -201,8 +205,8 @@ def import_dashboard_endpoint():
           }
 
           document.getElementById("preview").addEventListener("click", async () => {
-            if (!tokenInput.value.trim() || !fileInput.files.length) {
-              show({error: "توکن و فایل الزامی است."});
+            if (!fileInput.files.length) {
+              show({error: "انتخاب فایل الزامی است."});
               return;
             }
             const form = new FormData();
@@ -305,9 +309,9 @@ def schedule_generator_dashboard_endpoint():
         <main>
           <p><a href="/admin/dashboard">بازگشت به داشبورد</a> · <a href="/admin/imports">ورود فایل</a></p>
           <h1>تولید و انتشار برنامه شیفت</h1>
-          <p class="hint">این صفحه فقط با توکن نقش HR یا Admin کار می‌کند. توکن در مرورگر ذخیره نمی‌شود.</p>
+          <p class="hint">اگر از لینک امن ربات وارد شده‌اید، نشست مرورگر به‌صورت خودکار استفاده می‌شود.</p>
           <section class="card">
-            <label for="token">Bearer Token</label>
+            <label for="token">Bearer Token دستی (اختیاری)</label>
             <input id="token" type="password" autocomplete="off" />
             <button class="primary" id="loadOptions">دریافت کارکنان و الگوها</button>
           </section>
@@ -367,10 +371,10 @@ def schedule_generator_dashboard_endpoint():
           let currentJobId = null;
 
           function headers() {
-            return {
-              "Authorization": `Bearer ${tokenInput.value.trim()}`,
-              "Content-Type": "application/json"
-            };
+            const headers = {"Content-Type": "application/json"};
+            const token = tokenInput.value.trim();
+            if (token) headers["Authorization"] = `Bearer ${token}`;
+            return headers;
           }
 
           function setDefaultDates() {
@@ -441,7 +445,6 @@ def schedule_generator_dashboard_endpoint():
           }
 
           document.getElementById("loadOptions").addEventListener("click", async () => {
-            if (!tokenInput.value.trim()) return showError(new Error("توکن الزامی است."));
             try {
               const payload = await request("/schedule-generation/options", {headers: headers()});
               employees = payload.employees;

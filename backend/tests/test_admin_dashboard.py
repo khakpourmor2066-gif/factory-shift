@@ -89,5 +89,7 @@ def test_import_dashboard_is_static_and_uses_bearer_api_calls():
     assert response.status_code == 200
     assert "ورود کارکنان و برنامه شیفت" in response.text
     assert "Authorization" in response.text
+    assert "Bearer Token دستی (اختیاری)" in response.text
+    assert "توکن و فایل الزامی است" not in response.text
     assert "/imports/${typeInput.value}/preview" in response.text
     assert response.headers["Cache-Control"] == "no-store"
