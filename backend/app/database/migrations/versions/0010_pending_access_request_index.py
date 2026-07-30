@@ -1,6 +1,6 @@
 """allow repeated reviewed access requests
 
-Revision ID: 0010_pending_access_request_index
+Revision ID: 0010_pending_access_index
 Revises: 0009_api_tokens
 Create Date: 2026-07-29
 """
@@ -9,7 +9,7 @@ from alembic import op
 import sqlalchemy as sa
 
 
-revision = "0010_pending_access_request_index"
+revision = "0010_pending_access_index"
 down_revision = "0009_api_tokens"
 branch_labels = None
 depends_on = None
