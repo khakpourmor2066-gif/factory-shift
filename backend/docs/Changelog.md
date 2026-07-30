@@ -2,6 +2,10 @@
 
 ## 2026-07-30
 
+- Completed demo supervisor relationships and generated published schedules for
+  all 14 active roster members across the current and following month.
+- Added clickable HR/Admin web-management links and replaceable 15-minute
+  Bearer tokens generated from the Bale bot.
 - Expanded Bale access-request review with mobile, personnel code, employee,
   role, attempt count, and explicit identity-match status.
 - Restricted activation-request review to HR/Admin and blocked approval unless
