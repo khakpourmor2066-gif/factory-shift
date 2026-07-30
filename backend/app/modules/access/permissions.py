@@ -13,3 +13,7 @@ def can_view_own_schedule(role: str) -> bool:
 
 def can_view_supervisor_schedule(role: str) -> bool:
     return role in SUPERVISOR_ROLES
+
+
+def can_manage_access_requests(role: str) -> bool:
+    return role in MANAGEMENT_ROLES

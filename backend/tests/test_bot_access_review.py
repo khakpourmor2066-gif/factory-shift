@@ -1,11 +1,14 @@
 from types import SimpleNamespace
 
+import pytest
+from fastapi import HTTPException
+
 from app.modules.bot_adapter.handlers import bot_handler
 from app.modules.bot_adapter.services.webhook_service import format_bot_response
 
 
-def test_supervisor_can_view_pending_access_requests(monkeypatch):
-    user = SimpleNamespace(role="SUPERVISOR")
+def test_hr_can_view_pending_access_requests(monkeypatch):
+    user = SimpleNamespace(role="HR")
     request = SimpleNamespace(id=7, messenger_user_id="999", request_count=2)
 
     monkeypatch.setattr(bot_handler, "list_pending_access_requests", lambda db, limit=5: [request])
@@ -19,8 +22,8 @@ def test_supervisor_can_view_pending_access_requests(monkeypatch):
     assert result["reply_markup"]["inline_keyboard"][0][1]["callback_data"] == "REJECT_ACCESS:7"
 
 
-def test_supervisor_approve_access_request_from_bot(monkeypatch):
-    user = SimpleNamespace(role="SUPERVISOR")
+def test_hr_can_approve_access_request_from_bot(monkeypatch):
+    user = SimpleNamespace(role="HR")
     request = SimpleNamespace(id=7)
     captured_audit = []
 
@@ -37,8 +40,8 @@ def test_supervisor_approve_access_request_from_bot(monkeypatch):
     assert captured_audit[0].action == "access_request_approved_via_bot"
 
 
-def test_supervisor_reject_access_request_from_bot(monkeypatch):
-    user = SimpleNamespace(role="SUPERVISOR")
+def test_hr_can_reject_access_request_from_bot(monkeypatch):
+    user = SimpleNamespace(role="HR")
     request = SimpleNamespace(id=7)
     captured_audit = []
 
@@ -66,8 +69,8 @@ def test_employee_cannot_view_access_requests():
         raise AssertionError("employee should not view access requests")
 
 
-def test_supervisor_can_open_operations_menu():
-    user = SimpleNamespace(role="SUPERVISOR")
+def test_admin_can_open_operations_menu():
+    user = SimpleNamespace(role="ADMIN")
 
     result = bot_handler.resolve_user_message(None, user, "عملیات")
     text = format_bot_response(result)
@@ -77,8 +80,8 @@ def test_supervisor_can_open_operations_menu():
     assert result["reply_markup"]["inline_keyboard"][0][0]["callback_data"] == "VIEW_ACCESS_REQUESTS"
 
 
-def test_supervisor_can_view_access_request_report(monkeypatch):
-    user = SimpleNamespace(role="SUPERVISOR")
+def test_admin_can_view_access_request_report(monkeypatch):
+    user = SimpleNamespace(role="ADMIN")
     report = {"counts": {"pending": 2, "approved": 1, "rejected": 1}, "total": 4, "latest": []}
 
     monkeypatch.setattr(bot_handler, "get_access_request_report", lambda db: report)
@@ -91,8 +94,8 @@ def test_supervisor_can_view_access_request_report(monkeypatch):
     assert "در انتظار: 2" in text
 
 
-def test_supervisor_can_view_webhook_log_report(monkeypatch):
-    user = SimpleNamespace(role="SUPERVISOR")
+def test_admin_can_view_webhook_log_report(monkeypatch):
+    user = SimpleNamespace(role="ADMIN")
     report = {"counts": {"incoming": 3, "outgoing": 5, "sent": 7, "failed": 1}, "total": 8, "latest": []}
 
     monkeypatch.setattr(bot_handler, "get_webhook_log_report", lambda db: report)
@@ -103,3 +106,23 @@ def test_supervisor_can_view_webhook_log_report(monkeypatch):
     assert result["type"] == "webhook_log_report"
     assert "کل لاگ‌ها: 8" in text
     assert "ارسال موفق: 7" in text
+
+
+@pytest.mark.parametrize(
+    "command",
+    [
+        "درخواست‌ها",
+        "عملیات",
+        "VIEW_ACCESS_REQUEST_REPORT",
+        "VIEW_WEBHOOK_LOG_REPORT",
+        "APPROVE_ACCESS:7",
+        "REJECT_ACCESS:7",
+    ],
+)
+def test_supervisor_cannot_use_management_commands(command):
+    user = SimpleNamespace(role="SUPERVISOR")
+
+    with pytest.raises(HTTPException) as error:
+        bot_handler.resolve_user_message(None, user, command)
+
+    assert error.value.status_code == 403

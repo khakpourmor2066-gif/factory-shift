@@ -4,7 +4,11 @@ import re
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.modules.access.permissions import can_view_own_schedule, can_view_supervisor_schedule
+from app.modules.access.permissions import (
+    can_manage_access_requests,
+    can_view_own_schedule,
+    can_view_supervisor_schedule,
+)
 from app.modules.access_requests.service import (
     approve_access_request,
     get_access_request_report,
@@ -212,7 +216,7 @@ def resolve_user_message(db: Session, user: User, text: str) -> dict:
         }
 
     if raw_text in {"VIEW_ACCESS_REQUESTS"} or compact in {"درخواستها", "درخواست‌ها"}:
-        if not can_view_supervisor_schedule(user.role):
+        if not can_manage_access_requests(user.role):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission denied")
         pending_requests = list_pending_access_requests(db, limit=5)
         return {
@@ -222,7 +226,7 @@ def resolve_user_message(db: Session, user: User, text: str) -> dict:
         }
 
     if raw_text in {"VIEW_OPERATIONS"} or compact in {"عملیات"}:
-        if not can_view_supervisor_schedule(user.role):
+        if not can_manage_access_requests(user.role):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission denied")
         return {
             "type": "operations_menu",
@@ -231,7 +235,7 @@ def resolve_user_message(db: Session, user: User, text: str) -> dict:
         }
 
     if raw_text in {"VIEW_ACCESS_REQUEST_REPORT"}:
-        if not can_view_supervisor_schedule(user.role):
+        if not can_manage_access_requests(user.role):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission denied")
         report = get_access_request_report(db)
         return {
@@ -241,7 +245,7 @@ def resolve_user_message(db: Session, user: User, text: str) -> dict:
         }
 
     if raw_text in {"VIEW_WEBHOOK_LOG_REPORT"}:
-        if not can_view_supervisor_schedule(user.role):
+        if not can_manage_access_requests(user.role):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission denied")
         report = get_webhook_log_report(db)
         return {
@@ -251,7 +255,7 @@ def resolve_user_message(db: Session, user: User, text: str) -> dict:
         }
 
     if raw_text.startswith("APPROVE_ACCESS:"):
-        if not can_view_supervisor_schedule(user.role):
+        if not can_manage_access_requests(user.role):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission denied")
         _, request_id_text = raw_text.split(":", 1)
         review_status, access_request = approve_access_request(db, int(request_id_text))
@@ -273,7 +277,7 @@ def resolve_user_message(db: Session, user: User, text: str) -> dict:
         }
 
     if raw_text.startswith("REJECT_ACCESS:"):
-        if not can_view_supervisor_schedule(user.role):
+        if not can_manage_access_requests(user.role):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission denied")
         _, request_id_text = raw_text.split(":", 1)
         review_status, access_request = reject_access_request(db, int(request_id_text))

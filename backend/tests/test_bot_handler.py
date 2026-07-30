@@ -226,6 +226,11 @@ def test_callback_commands_are_detected(monkeypatch):
     assert bot_handler.resolve_user_message(None, user, "HELP")["type"] == "help"
     assert bot_handler.resolve_user_message(None, user, "MENU")["type"] == "menu"
     assert bot_handler.resolve_user_message(None, user, "BACK_MENU")["type"] == "menu"
+
+
+def test_admin_operations_command_is_detected():
+    user = SimpleNamespace(role="ADMIN")
+
     assert bot_handler.resolve_user_message(None, user, "عملیات")["type"] == "operations_menu"
 
 
