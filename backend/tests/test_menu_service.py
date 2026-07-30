@@ -7,6 +7,7 @@ def test_employee_menu():
     assert "برنامه من" in menu
     assert "افراد روز" not in menu
     assert "عملیات" not in menu
+    assert "خروج از حساب" in menu
 
 
 def test_supervisor_menu():
@@ -15,6 +16,7 @@ def test_supervisor_menu():
     assert "افراد روز" in menu
     assert "درخواست‌ها" not in menu
     assert "عملیات" not in menu
+    assert "خروج از حساب" in menu
 
 
 def test_management_menus_include_access_operations():
@@ -23,3 +25,4 @@ def test_management_menus_include_access_operations():
 
         assert "درخواست‌ها" in menu
         assert "عملیات" in menu
+        assert "خروج از حساب" in menu

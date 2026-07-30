@@ -21,6 +21,7 @@ from app.modules.change_management.services.change_management_service import cre
 from app.modules.employee_view.service import get_my_schedule
 from app.modules.supervisor_view.service import get_supervisor_schedule
 from app.modules.users.model import User
+from app.modules.users.service import unlink_messenger_account
 from app.modules.bot_adapter.services.menu_service import get_menu_for_role
 from app.modules.webhook_logs.service import get_webhook_log_report
 
@@ -46,6 +47,7 @@ MENU_COMMANDS = {
     "ماه بعد": "VIEW_MONTH_NEXT",
     "ماه قبل": "VIEW_MONTH_PREVIOUS",
     "بازگشت": "BACK_MENU",
+    "خروج از حساب": "LOGOUT_REQUEST",
 }
 
 
@@ -139,6 +141,15 @@ def build_operations_markup() -> dict:
     }
 
 
+def build_logout_confirmation_markup() -> dict:
+    return {
+        "inline_keyboard": [
+            [{"text": "تأیید خروج", "callback_data": "LOGOUT_CONFIRM"}],
+            [{"text": "انصراف", "callback_data": "LOGOUT_CANCEL"}],
+        ]
+    }
+
+
 def get_actor_user_id(user: User) -> int:
     return int(getattr(user, "id", 0) or 0)
 
@@ -159,6 +170,29 @@ def resolve_user_message(db: Session, user: User, text: str) -> dict:
 
     if raw_text in {"MENU", "BACK_MENU"} or normalized in {"منو", "menu", "/menu"}:
         return {"type": "menu", "items": menu, "reply_markup": build_reply_markup(menu)}
+
+    if raw_text == "LOGOUT_REQUEST" or compact in {"خروجازحساب", "خروج", "logout"}:
+        return {
+            "type": "logout_confirmation",
+            "text": "آیا مطمئن هستید که می‌خواهید از حساب خارج شوید؟",
+            "reply_markup": build_logout_confirmation_markup(),
+        }
+
+    if raw_text == "LOGOUT_CANCEL":
+        return {
+            "type": "menu",
+            "text": "خروج از حساب لغو شد.",
+            "items": menu,
+            "reply_markup": build_reply_markup(menu),
+        }
+
+    if raw_text == "LOGOUT_CONFIRM":
+        unlink_messenger_account(db, user)
+        return {
+            "type": "logged_out",
+            "text": "از حساب خارج شدید.\nبرای ورود دوباره، /start را بفرستید.",
+            "reply_markup": {"remove_keyboard": True},
+        }
 
     if raw_text in {"VIEW_MY_SHIFT"} or compact in {"برنامهشیفتمن", "شیفتمن", "برنامهمن"}:
         if not can_view_own_schedule(user.role):

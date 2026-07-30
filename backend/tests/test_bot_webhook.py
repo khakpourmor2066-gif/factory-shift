@@ -87,12 +87,13 @@ def test_bot_webhook_sends_reply(monkeypatch):
                 "emp-1",
                 "منو",
                 {
-                    "inline_keyboard": [
-                        [{"text": "برنامه من", "callback_data": "VIEW_MY_SHIFT"}],
-                        [{"text": "ماه", "callback_data": "SELECT_MONTH"}],
-                        [{"text": "راهنما", "callback_data": "HELP"}],
-                    ]
-                },
+                        "inline_keyboard": [
+                            [{"text": "برنامه من", "callback_data": "VIEW_MY_SHIFT"}],
+                            [{"text": "ماه", "callback_data": "SELECT_MONTH"}],
+                            [{"text": "راهنما", "callback_data": "HELP"}],
+                            [{"text": "خروج از حساب", "callback_data": "LOGOUT_REQUEST"}],
+                        ]
+                    },
             )
         ]
 

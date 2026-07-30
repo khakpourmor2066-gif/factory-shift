@@ -59,6 +59,7 @@ def get_or_create_access_request(
     platform: str,
     messenger_user_id: str,
     latest_text: str | None,
+    commit: bool = True,
 ) -> AccessRequest:
     access_request = (
         db.query(AccessRequest)
@@ -79,7 +80,10 @@ def get_or_create_access_request(
     else:
         access_request.latest_text = latest_text
         access_request.request_count = (access_request.request_count or 0) + 1
-    db.commit()
+    if commit:
+        db.commit()
+    else:
+        db.flush()
     db.refresh(access_request)
     return access_request
 
@@ -243,6 +247,7 @@ def activate_access_by_hr_identity(
         platform=platform,
         messenger_user_id=messenger_user_id,
         latest_text=text,
+        commit=False,
     )
     access_request.status = "approved"
     db.commit()

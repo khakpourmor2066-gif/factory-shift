@@ -11,6 +11,7 @@ def get_menu_for_role(role: str) -> list[str]:
             "درخواست‌ها",
             "عملیات",
             "راهنما",
+            "خروج از حساب",
         ]
     if role == "SUPERVISOR":
         return SUPERVISOR_MENU
