@@ -160,6 +160,9 @@ with:
 
 If `BALE_BOT_TOKEN` is not set, the code can still use the local fallback `BALE_SEND_URL` for simulator mode.
 
+For the combined webhook and real Bale Web testing workflow, see
+`docs/Bale_E2E_Testing_FA.md`.
+
 To register the webhook with Bale:
 
 ```bash
