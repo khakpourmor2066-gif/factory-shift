@@ -80,6 +80,14 @@ def test_contact_then_personnel_code_activates_user(tmp_path: Path, monkeypatch)
     assert approval_result["status"] == "access_approved"
     assert user is not None
     assert sent_messages[0][2] is None
+    assert sent_messages[0][1] == (
+        "شماره تلفن همراه دریافت شد.\n"
+        "شماره: 09120000201\n"
+        "اکنون، شماره کارمندی خود را ارسال کنید. مثال:\n"
+        "EMP-001\n"
+        "\n"
+        "تعداد درخواست در حال بررسی: 1"
+    )
     db.close()
 
 
@@ -114,4 +122,7 @@ def test_typed_mobile_then_personnel_code_activates_user(tmp_path: Path, monkeyp
     assert approval_result["status"] == "access_approved"
     assert user is not None
     assert "شماره تلفن همراه دریافت شد." in sent_messages[0][1]
+    assert "شناسه بله شما" not in sent_messages[0][1]
+    assert "شماره درخواست دسترسی" not in sent_messages[0][1]
+    assert "تعداد درخواست در حال بررسی: 1" in sent_messages[0][1]
     db.close()
