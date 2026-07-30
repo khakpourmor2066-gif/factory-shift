@@ -65,6 +65,20 @@ def test_admin_dashboard_returns_html_for_supervisor():
 
     assert response.status_code == 200
     assert "داشبورد مدیریتی" in response.text
+    assert "/admin/schedule-generator" not in response.text
+
+
+def test_admin_dashboard_shows_schedule_generator_for_hr():
+    app.dependency_overrides[get_db] = override_db(SimpleNamespace(id=1, role="HR", is_active=True))
+    client = TestClient(app)
+
+    try:
+        response = client.get("/admin/dashboard", headers={"X-User-Id": "1"})
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert "/admin/schedule-generator" in response.text
 
 
 def test_import_dashboard_is_static_and_uses_bearer_api_calls():

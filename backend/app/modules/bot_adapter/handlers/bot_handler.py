@@ -5,6 +5,7 @@ from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.modules.access.permissions import (
+    can_generate_schedule,
     can_manage_access_requests,
     can_view_own_schedule,
     can_view_supervisor_schedule,
@@ -19,6 +20,17 @@ from app.modules.access_requests.service import (
 from app.modules.change_management.schemas.change_management import AuditLogCreate
 from app.modules.change_management.services.change_management_service import create_audit_log
 from app.modules.employee_view.service import get_my_schedule
+from app.modules.schedule_generation.schema import ScheduleGenerationPreviewCreate
+from app.modules.schedule_generation.service import (
+    cancel_generation_job,
+    confirm_generation_job,
+    create_generation_preview,
+    generation_job_to_dict,
+    get_assignment_for_generation,
+    list_generation_options,
+    publish_generation_job,
+    quick_range_for_assignment,
+)
 from app.modules.supervisor_view.service import get_supervisor_schedule
 from app.modules.users.model import User
 from app.modules.users.service import unlink_messenger_account
@@ -38,6 +50,7 @@ MENU_COMMANDS = {
     "درخواست‌ها": "VIEW_ACCESS_REQUESTS",
     "درخواست ها": "VIEW_ACCESS_REQUESTS",
     "عملیات": "VIEW_OPERATIONS",
+    "تولید برنامه": "GENERATE_SCHEDULE",
     "راهنما": "HELP",
     "منو": "MENU",
     "امروز": "VIEW_DAY_TODAY",
@@ -238,7 +251,8 @@ def get_help_text(role: str) -> str:
                 "• درخواست‌ها: تأیید یا رد درخواست‌های فعال‌سازی.",
                 "• عملیات: گزارش درخواست‌ها و سلامت webhook.",
                 "• بارگذاری کارکنان و شیفت‌ها: از صفحه وب /admin/imports با پیش‌نمایش و تأیید نهایی.",
-                "• تولید خودکار برنامه: از API مدیریت شیفت و فقط برای روزهای خالی بازه Assignment.",
+                "• تولید برنامه: انتخاب کارمند، الگو و بازه؛ سپس تکمیل فقط برای روزهای خالی، تأیید یا انتشار.",
+                "• فرم وب تولید برنامه: /admin/schedule-generator.",
                 "• خروج از حساب: قطع اتصال حساب بله پس از تأیید.",
             ]
         )
@@ -250,7 +264,7 @@ def get_help_text(role: str) -> str:
                 "• درخواست‌ها: تأیید یا رد فعال‌سازی کاربران.",
                 "• عملیات: گزارش درخواست‌ها و لاگ‌های webhook.",
                 "• مدیریت داده: بارگذاری کارکنان و شیفت‌ها در /admin/imports.",
-                "• تولید خودکار برنامه: از API مدیریت شیفت و بر اساس الگو و Assignment.",
+                "• تولید خودکار برنامه: از داخل ربات یا فرم /admin/schedule-generator.",
                 "• خروج از حساب: قطع اتصال حساب بله پس از تأیید.",
             ]
         )
@@ -287,6 +301,81 @@ def build_operations_markup() -> dict:
             [{"text": "گزارش درخواست‌ها", "callback_data": "VIEW_ACCESS_REQUEST_REPORT"}],
             [{"text": "گزارش لاگ‌ها", "callback_data": "VIEW_WEBHOOK_LOG_REPORT"}],
             [{"text": "بازگشت", "callback_data": "BACK_MENU"}],
+        ]
+    }
+
+
+def build_generation_employee_markup(options: dict) -> dict:
+    buttons = [
+        [
+            {
+                "text": f"{employee['personnel_code']} · {employee['full_name']}",
+                "callback_data": f"GEN_EMP:{employee['id']}",
+            }
+        ]
+        for employee in options.get("employees", [])
+    ]
+    buttons.append([{"text": "بازگشت به منو", "callback_data": "BACK_MENU"}])
+    return {"inline_keyboard": buttons}
+
+
+def build_generation_assignment_markup(employee: dict) -> dict:
+    buttons = [
+        [
+            {
+                "text": f"{assignment['pattern_name']} · از {assignment['start_date']}",
+                "callback_data": f"GEN_ASSIGN:{assignment['id']}",
+            }
+        ]
+        for assignment in employee.get("assignments", [])
+    ]
+    buttons.extend(
+        [
+            [{"text": "انتخاب کارمند دیگر", "callback_data": "GENERATE_SCHEDULE"}],
+            [{"text": "بازگشت به منو", "callback_data": "BACK_MENU"}],
+        ]
+    )
+    return {"inline_keyboard": buttons}
+
+
+def build_generation_range_markup(assignment_id: int) -> dict:
+    return {
+        "inline_keyboard": [
+            [{"text": "۷ روز آینده", "callback_data": f"GEN_RANGE:{assignment_id}:7D"}],
+            [{"text": "تا پایان ماه جاری", "callback_data": f"GEN_RANGE:{assignment_id}:CURRENT_MONTH"}],
+            [{"text": "ماه بعد", "callback_data": f"GEN_RANGE:{assignment_id}:NEXT_MONTH"}],
+            [{"text": "انتخاب الگوی دیگر", "callback_data": "GENERATE_SCHEDULE"}],
+            [{"text": "بازگشت به منو", "callback_data": "BACK_MENU"}],
+        ]
+    }
+
+
+def build_generation_preview_markup(job_id: int) -> dict:
+    return {
+        "inline_keyboard": [
+            [{"text": "تأیید و ذخیره پیش‌نویس", "callback_data": f"GEN_CONFIRM:{job_id}"}],
+            [{"text": "انتشار برنامه", "callback_data": f"GEN_PUBLISH:{job_id}"}],
+            [{"text": "لغو", "callback_data": f"GEN_CANCEL:{job_id}"}],
+            [{"text": "بازگشت به منو", "callback_data": "BACK_MENU"}],
+        ]
+    }
+
+
+def build_generation_confirmed_markup(job_id: int) -> dict:
+    return {
+        "inline_keyboard": [
+            [{"text": "انتشار پیش‌نویس", "callback_data": f"GEN_PUBLISH:{job_id}"}],
+            [{"text": "تولید برنامه دیگر", "callback_data": "GENERATE_SCHEDULE"}],
+            [{"text": "بازگشت به منو", "callback_data": "BACK_MENU"}],
+        ]
+    }
+
+
+def build_generation_finished_markup() -> dict:
+    return {
+        "inline_keyboard": [
+            [{"text": "تولید برنامه دیگر", "callback_data": "GENERATE_SCHEDULE"}],
+            [{"text": "بازگشت به منو", "callback_data": "BACK_MENU"}],
         ]
     }
 
@@ -430,6 +519,133 @@ def resolve_user_message(db: Session, user: User, text: str) -> dict:
             "text": "بخش عملیات آماده است.",
             "reply_markup": build_operations_markup(),
         }
+
+    if raw_text == "GENERATE_SCHEDULE" or compact in {"تولیدبرنامه"}:
+        if not can_generate_schedule(user.role):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission denied")
+        options = list_generation_options(db)
+        return {
+            "type": "schedule_generation_employee_select",
+            "text": (
+                "کارمند موردنظر را انتخاب کنید."
+                if options.get("employees")
+                else "هیچ کارمند دارای الگوی اختصاص‌یافته پیدا نشد."
+            ),
+            "data": options,
+            "reply_markup": build_generation_employee_markup(options),
+        }
+
+    if raw_text.startswith("GEN_EMP:"):
+        if not can_generate_schedule(user.role):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission denied")
+        employee_id = int(raw_text.split(":", 1)[1])
+        options = list_generation_options(db)
+        employee = next(
+            (item for item in options.get("employees", []) if item["id"] == employee_id),
+            None,
+        )
+        if employee is None:
+            return {
+                "type": "schedule_generation_error",
+                "text": "کارمند یا Assignment فعال پیدا نشد.",
+                "reply_markup": build_generation_employee_markup(options),
+            }
+        return {
+            "type": "schedule_generation_assignment_select",
+            "text": f"الگوی اختصاص‌یافته برای {employee['full_name']} را انتخاب کنید.",
+            "data": {"employee": employee},
+            "reply_markup": build_generation_assignment_markup(employee),
+        }
+
+    if raw_text.startswith("GEN_ASSIGN:"):
+        if not can_generate_schedule(user.role):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission denied")
+        assignment_id = int(raw_text.split(":", 1)[1])
+        try:
+            assignment = get_assignment_for_generation(db, assignment_id)
+        except ValueError:
+            return {
+                "type": "schedule_generation_error",
+                "text": "الگوی اختصاص‌یافته پیدا نشد.",
+                "reply_markup": build_generation_finished_markup(),
+            }
+        return {
+            "type": "schedule_generation_range_select",
+            "text": "بازه تولید برنامه را انتخاب کنید.",
+            "data": {"assignment_id": assignment.id},
+            "reply_markup": build_generation_range_markup(assignment.id),
+        }
+
+    if raw_text.startswith("GEN_RANGE:"):
+        if not can_generate_schedule(user.role):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission denied")
+        _, assignment_id_text, range_key = raw_text.split(":", 2)
+        try:
+            assignment = get_assignment_for_generation(db, int(assignment_id_text))
+            from_date, to_date = quick_range_for_assignment(assignment, range_key)
+            job = create_generation_preview(
+                db,
+                ScheduleGenerationPreviewCreate(
+                    employee_id=assignment.employee_id,
+                    assignment_id=assignment.id,
+                    from_date=from_date,
+                    to_date=to_date,
+                ),
+                get_actor_user_id(user),
+            )
+        except ValueError as error:
+            return {
+                "type": "schedule_generation_error",
+                "text": f"پیش‌نمایش ایجاد نشد: {error}",
+                "reply_markup": build_generation_finished_markup(),
+            }
+        return {
+            "type": "schedule_generation_preview",
+            "text": (
+                f"پیش‌نمایش #{job.id}\n"
+                f"بازه: {job.from_date} تا {job.to_date}\n"
+                f"کل روزها: {job.total_days}\n"
+                f"روزهای دارای برنامه: {job.total_days - job.missing_days}\n"
+                f"روزهای قابل تکمیل: {job.missing_days}\n"
+                "یکی از گزینه‌های تأیید، انتشار یا لغو را انتخاب کنید."
+            ),
+            "data": {"job": generation_job_to_dict(job)},
+            "reply_markup": build_generation_preview_markup(job.id),
+        }
+
+    generation_actions = {
+        "GEN_CONFIRM:": ("confirm", confirm_generation_job),
+        "GEN_PUBLISH:": ("publish", publish_generation_job),
+        "GEN_CANCEL:": ("cancel", cancel_generation_job),
+    }
+    for prefix, (action, handler) in generation_actions.items():
+        if raw_text.startswith(prefix):
+            if not can_generate_schedule(user.role):
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission denied")
+            job_id = int(raw_text.split(":", 1)[1])
+            try:
+                job = handler(db, job_id, get_actor_user_id(user))
+            except ValueError as error:
+                return {
+                    "type": "schedule_generation_error",
+                    "text": f"عملیات انجام نشد: {error}",
+                    "reply_markup": build_generation_finished_markup(),
+                }
+            labels = {
+                "confirm": f"پیش‌نویس برنامه تأیید شد. {job.created_schedules} روز ذخیره شد.",
+                "publish": f"برنامه منتشر شد. {job.created_schedules} روز ایجاد شده است.",
+                "cancel": "تولید برنامه لغو شد و تغییری در برنامه‌ها ایجاد نشد.",
+            }
+            return {
+                "type": "schedule_generation_result",
+                "text": labels[action],
+                "data": {"job": generation_job_to_dict(job), "action": action},
+                "reply_markup": (
+                    build_generation_confirmed_markup(job.id)
+                    if action == "confirm"
+                    else build_generation_finished_markup()
+                ),
+            }
 
     if raw_text in {"VIEW_ACCESS_REQUEST_REPORT"}:
         if not can_manage_access_requests(user.role):

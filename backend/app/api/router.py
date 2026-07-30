@@ -11,6 +11,7 @@ from app.modules.employee_view.router import router as employee_view_router
 from app.modules.employees.router import router as employees_router
 from app.modules.data_imports.router import router as data_imports_router
 from app.modules.reports.router import router as reports_router
+from app.modules.schedule_generation.router import router as schedule_generation_router
 from app.modules.shifts.router import router as shifts_router
 from app.modules.supervisor_view.router import router as supervisor_view_router
 from app.modules.users.router import router as users_router
@@ -23,6 +24,7 @@ api_router.include_router(departments_router)
 api_router.include_router(employees_router)
 api_router.include_router(data_imports_router)
 api_router.include_router(shifts_router)
+api_router.include_router(schedule_generation_router)
 api_router.include_router(employee_view_router)
 api_router.include_router(supervisor_view_router)
 api_router.include_router(bot_adapter_router)
