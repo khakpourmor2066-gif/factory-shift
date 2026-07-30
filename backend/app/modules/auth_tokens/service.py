@@ -142,6 +142,27 @@ def consume_web_login_ticket(
     return user, session_token, raw_session_token
 
 
+def inspect_web_login_ticket(db: Session, raw_ticket: str) -> User:
+    ticket = (
+        db.query(WebLoginTicket)
+        .filter(WebLoginTicket.token_hash == hash_token(raw_ticket))
+        .first()
+    )
+    if ticket is None or ticket.consumed_at is not None:
+        raise ValueError("invalid or consumed web login link")
+
+    expires_at = ticket.expires_at
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=UTC)
+    if expires_at <= datetime.now(UTC):
+        raise ValueError("expired web login link")
+
+    user = db.query(User).filter(User.id == ticket.user_id, User.is_active.is_(True)).first()
+    if user is None or user.role not in {"HR", "ADMIN"}:
+        raise ValueError("web access is no longer allowed")
+    return user
+
+
 def revoke_web_session(db: Session, raw_session_token: str) -> None:
     token = (
         db.query(ApiToken)
