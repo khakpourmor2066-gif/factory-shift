@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from app.database.connection import get_db
 from app.main import app
+from app.modules.access.dependencies import get_current_user
 from app.modules.access_requests.model import AccessRequest
 from app.modules.users.model import User
 from app.modules.webhook_logs.model import WebhookLog
@@ -81,15 +82,23 @@ def test_admin_dashboard_shows_schedule_generator_for_hr():
     assert "/admin/schedule-generator" in response.text
 
 
-def test_import_dashboard_is_static_and_uses_bearer_api_calls():
+def test_import_dashboard_requires_authenticated_hr():
     client = TestClient(app)
+    denied_response = client.get("/admin/imports")
+    app.dependency_overrides[get_current_user] = lambda: SimpleNamespace(
+        id=1,
+        role="HR",
+        is_active=True,
+    )
+    try:
+        response = client.get("/admin/imports")
+    finally:
+        app.dependency_overrides.clear()
 
-    response = client.get("/admin/imports")
-
+    assert denied_response.status_code == 401
     assert response.status_code == 200
     assert "ورود کارکنان و برنامه شیفت" in response.text
-    assert "Authorization" in response.text
-    assert "Bearer Token دستی (اختیاری)" in response.text
-    assert "توکن و فایل الزامی است" not in response.text
+    assert "Bearer Token" not in response.text
+    assert "Authorization" not in response.text
     assert "/imports/${typeInput.value}/preview" in response.text
     assert response.headers["Cache-Control"] == "no-store"

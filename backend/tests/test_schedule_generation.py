@@ -164,10 +164,19 @@ def test_schedule_generation_api_enforces_roles_and_returns_options():
 
 def test_schedule_generator_web_page_contains_full_workflow():
     client = TestClient(app)
-
-    response = client.get("/admin/schedule-generator")
+    app.dependency_overrides[get_current_user] = lambda: User(
+        id=1,
+        mobile="09120000001",
+        role="HR",
+        is_active=True,
+    )
+    try:
+        response = client.get("/admin/schedule-generator")
+    finally:
+        app.dependency_overrides.clear()
 
     assert response.status_code == 200
+    assert "Bearer Token" not in response.text
     assert "انتخاب کارمند" in response.text
     assert "الگوی اختصاص‌یافته" in response.text
     assert "مشاهده پیش‌نمایش" in response.text

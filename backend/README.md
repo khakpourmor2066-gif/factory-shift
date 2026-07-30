@@ -350,7 +350,7 @@ their direct reports.
 HR and Admin users request a one-time web-login link from Bale. The link is
 valid for five minutes and one use, then creates an eight-hour `HttpOnly`,
 `Secure`, `SameSite=Strict` browser session. The forms use that session
-automatically; manual Bearer tokens remain an optional fallback.
+automatically and do not display or request a separate token.
 
 ## Tests
 
