@@ -10,14 +10,14 @@ from app.modules.users.model import User
 
 def seed_mvp_data(db: Session) -> dict:
     department = _get_or_create_department(db)
-    supervisor_user = _get_or_create_user(db, "09120000001", "SUPERVISOR", "sup-1")
-    employee_user = _get_or_create_user(db, "09120000002", "EMPLOYEE", "emp-1")
+    supervisor_user = _get_or_create_user(db, "09120000002", "SUPERVISOR", "sup-1")
+    employee_user = _get_or_create_user(db, "09120000005", "EMPLOYEE", "emp-1")
     supervisor = _get_or_create_employee(
         db=db,
         personnel_code="SUP-001",
         first_name="Sara",
-        last_name="Supervisor",
-        mobile="09120000001",
+        last_name="Mohammadi",
+        mobile="09120000002",
         department_id=department.id,
         supervisor_id=None,
         user_id=supervisor_user.id,
@@ -26,8 +26,8 @@ def seed_mvp_data(db: Session) -> dict:
         db=db,
         personnel_code="EMP-001",
         first_name="Ali",
-        last_name="Worker",
-        mobile="09120000002",
+        last_name="Ahmadi",
+        mobile="09120000005",
         department_id=department.id,
         supervisor_id=supervisor.id,
         user_id=employee_user.id,
@@ -67,7 +67,6 @@ def _get_or_create_user(db: Session, mobile: str, role: str, messenger_user_id: 
         db.add(user)
     else:
         user.role = role
-        user.messenger_user_id = messenger_user_id
         user.is_active = True
     db.commit()
     db.refresh(user)
