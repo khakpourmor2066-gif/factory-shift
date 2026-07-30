@@ -311,7 +311,7 @@ def schedule_generator_dashboard_endpoint():
             <input id="token" type="password" autocomplete="off" />
             <button class="primary" id="loadOptions">دریافت کارکنان و الگوها</button>
           </section>
-          <section class="card">
+          <section class="card" id="workflow" hidden>
             <div class="grid">
               <div>
                 <label for="employee">کارمند</label>
@@ -332,7 +332,7 @@ def schedule_generator_dashboard_endpoint():
             </div>
             <button class="primary" id="preview" disabled>مشاهده پیش‌نمایش</button>
           </section>
-          <section class="card">
+          <section class="card" id="resultSection" hidden>
             <div class="summary">
               <span class="badge">Job: <strong id="jobId">-</strong></span>
               <span class="badge">وضعیت: <strong id="status">-</strong></span>
@@ -445,6 +445,8 @@ def schedule_generator_dashboard_endpoint():
             try {
               const payload = await request("/schedule-generation/options", {headers: headers()});
               employees = payload.employees;
+              document.getElementById("workflow").hidden = false;
+              document.getElementById("resultSection").hidden = false;
               employeeInput.innerHTML = "";
               for (const employee of employees) {
                 const option = document.createElement("option");

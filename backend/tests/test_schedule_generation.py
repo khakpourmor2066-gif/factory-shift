@@ -174,6 +174,8 @@ def test_schedule_generator_web_page_contains_full_workflow():
     assert "تأیید و ذخیره پیش‌نویس" in response.text
     assert "انتشار برنامه" in response.text
     assert "لغو" in response.text
+    assert 'id="workflow" hidden' in response.text
+    assert 'id="resultSection" hidden' in response.text
 
 
 def test_bale_generation_flow_creates_preview_and_can_cancel():
