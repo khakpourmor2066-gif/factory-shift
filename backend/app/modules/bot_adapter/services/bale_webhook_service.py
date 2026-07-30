@@ -2,6 +2,7 @@
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.modules.access_requests.model import AccessRequest
 from app.modules.access_requests.service import (
     activate_access_by_hr_identity,
     combine_pending_contact_with_code,
@@ -107,10 +108,18 @@ def resolve_bale_webhook_message(db: Session, payload: dict) -> dict:
                 messenger_user_id=messenger_user_id,
                 latest_text=text,
             )
+            pending_request_count = (
+                db.query(AccessRequest)
+                .filter(AccessRequest.status == "pending")
+                .count()
+            )
             message_sent = try_send_bale_message(
                 bot_adapter,
                 messenger_user_id,
-                format_contact_received_message(messenger_user_id, access_request.id, contact_mobile),
+                format_contact_received_message(
+                    contact_mobile=contact_mobile,
+                    pending_request_count=pending_request_count,
+                ),
             )
             create_webhook_log(
                 db,

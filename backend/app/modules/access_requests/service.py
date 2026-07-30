@@ -287,9 +287,8 @@ def format_access_approved_message() -> str:
 
 
 def format_contact_received_message(
-    messenger_user_id: str,
-    request_id: int | None = None,
     contact_mobile: str | None = None,
+    pending_request_count: int | None = None,
 ) -> str:
     lines = [
         "شماره تلفن همراه دریافت شد.",
@@ -298,11 +297,15 @@ def format_contact_received_message(
         lines.append(f"شماره: {contact_mobile}")
     lines.extend(
         [
-            "اکنون، شماره کارمندی خود را ارسال کنید.",
-            "مثال: EMP-001",
-            f"شناسه بله شما: {messenger_user_id}",
+            "اکنون، شماره کارمندی خود را ارسال کنید. مثال:",
+            "EMP-001",
         ]
     )
-    if request_id is not None:
-        lines.append(f"شماره درخواست دسترسی: {request_id}")
+    if pending_request_count is not None:
+        lines.extend(
+            [
+                "",
+                f"تعداد درخواست در حال بررسی: {pending_request_count}",
+            ]
+        )
     return "\n".join(lines)
