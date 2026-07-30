@@ -167,7 +167,8 @@ def list_import_records(db: Session, job_id: int) -> list[dict]:
 def employee_template() -> str:
     return (
         "employee_code,first_name,last_name,mobile,department,role,supervisor_code\n"
-        "EMP-001,علی,احمدی,09120000001,عملیات,EMPLOYEE,SUP-001\n"
+        "SUP-NEW-001,سارا,محمدی,09129999991,عملیات,SUPERVISOR,\n"
+        "EMP-NEW-001,علی,احمدی,09129999992,عملیات,EMPLOYEE,SUP-NEW-001\n"
     )
 
 
