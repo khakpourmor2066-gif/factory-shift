@@ -31,7 +31,7 @@ def create_pattern_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    require_roles(current_user, {"SUPERVISOR", "ADMIN"})
+    require_roles(current_user, {"HR", "ADMIN"})
     return register_shift_pattern(db, pattern_in)
 
 
@@ -50,7 +50,7 @@ def create_assignment_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    require_roles(current_user, {"SUPERVISOR", "ADMIN"})
+    require_roles(current_user, {"HR", "ADMIN"})
     return register_assignment(db, assignment_in)
 
 
@@ -60,7 +60,7 @@ def generate_schedule_endpoint(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    require_roles(current_user, {"SUPERVISOR", "ADMIN"})
+    require_roles(current_user, {"HR", "ADMIN"})
     try:
         return generate_schedule(db, request)
     except ValueError as error:

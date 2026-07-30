@@ -50,6 +50,16 @@ MENU_COMMANDS = {
     "خروج از حساب": "LOGOUT_REQUEST",
 }
 
+PERSIAN_WEEKDAYS = [
+    "دوشنبه",
+    "سه‌شنبه",
+    "چهارشنبه",
+    "پنجشنبه",
+    "جمعه",
+    "شنبه",
+    "یکشنبه",
+]
+
 
 def normalize_digits(text: str) -> str:
     return text.translate(str.maketrans("۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩", "01234567890123456789"))
@@ -99,6 +109,48 @@ def build_back_markup() -> dict:
     return build_reply_markup(["بازگشت"])
 
 
+def format_date_button(target_date: date, today: date) -> str:
+    if target_date == today:
+        label = "امروز"
+    elif target_date == today + timedelta(days=1):
+        label = "فردا"
+    elif target_date == today + timedelta(days=2):
+        label = "پس‌فردا"
+    else:
+        label = PERSIAN_WEEKDAYS[target_date.weekday()]
+    return f"{label} · {target_date.strftime('%Y/%m/%d')}"
+
+
+def build_date_picker_markup(start_date: date | None = None) -> dict:
+    today = date.today()
+    first_date = start_date or today
+    buttons = [
+        [
+            {
+                "text": format_date_button(first_date + timedelta(days=offset), today),
+                "callback_data": f"VIEW_DATE:{(first_date + timedelta(days=offset)).isoformat()}",
+            }
+        ]
+        for offset in range(7)
+    ]
+    buttons.extend(
+        [
+            [
+                {
+                    "text": "هفته قبل",
+                    "callback_data": f"DATE_WEEK:{(first_date - timedelta(days=7)).isoformat()}",
+                },
+                {
+                    "text": "هفته بعد",
+                    "callback_data": f"DATE_WEEK:{(first_date + timedelta(days=7)).isoformat()}",
+                },
+            ],
+            [{"text": "بازگشت", "callback_data": "BACK_MENU"}],
+        ]
+    )
+    return {"inline_keyboard": buttons}
+
+
 def build_summary_markup(show_more_command: str | None = None) -> dict:
     buttons = []
     if show_more_command:
@@ -114,6 +166,103 @@ def build_full_markup(show_less_command: str = "SHOW_LESS") -> dict:
             [{"text": "بازگشت", "callback_data": "BACK_MENU"}],
         ]
     }
+
+
+def build_supervisor_schedule_markup(target_date: date, show_more_command: str | None = None) -> dict:
+    buttons = []
+    if show_more_command:
+        buttons.append([{"text": "نمایش بیشتر", "callback_data": show_more_command}])
+    buttons.extend(
+        [
+            [
+                {
+                    "text": "روز قبل",
+                    "callback_data": f"VIEW_DATE:{(target_date - timedelta(days=1)).isoformat()}",
+                },
+                {
+                    "text": "روز بعد",
+                    "callback_data": f"VIEW_DATE:{(target_date + timedelta(days=1)).isoformat()}",
+                },
+            ],
+            [{"text": "انتخاب تاریخ دیگر", "callback_data": "SELECT_DATE"}],
+            [{"text": "بازگشت به منو", "callback_data": "BACK_MENU"}],
+        ]
+    )
+    return {"inline_keyboard": buttons}
+
+
+def build_supervisor_full_markup(target_date: date) -> dict:
+    return {
+        "inline_keyboard": [
+            [
+                {
+                    "text": "نمایش کمتر",
+                    "callback_data": f"SHOW_LESS_SUPERVISOR:{target_date.isoformat()}",
+                }
+            ],
+            [
+                {
+                    "text": "روز قبل",
+                    "callback_data": f"VIEW_DATE:{(target_date - timedelta(days=1)).isoformat()}",
+                },
+                {
+                    "text": "روز بعد",
+                    "callback_data": f"VIEW_DATE:{(target_date + timedelta(days=1)).isoformat()}",
+                },
+            ],
+            [{"text": "انتخاب تاریخ دیگر", "callback_data": "SELECT_DATE"}],
+            [{"text": "بازگشت به منو", "callback_data": "BACK_MENU"}],
+        ]
+    }
+
+
+def get_help_text(role: str) -> str:
+    if role == "SUPERVISOR":
+        return "\n".join(
+            [
+                "راهنمای سرپرست",
+                "• افراد روز: برنامه نیروهای تحت سرپرستی در امروز.",
+                "• تاریخ: انتخاب یکی از ۷ روز، رفتن به هفته قبل یا بعد و مشاهده برنامه همان روز.",
+                "• روز قبل/روز بعد: جابه‌جایی سریع میان برنامه روزها.",
+                "• نمایش بیشتر: مشاهده ادامه فهرست نیروها.",
+                "• خروج از حساب: قطع اتصال حساب بله پس از تأیید.",
+                "سرپرست فقط برنامه نیروهای مجاز خود را مشاهده می‌کند و امکان تغییر یا تولید برنامه ندارد.",
+            ]
+        )
+    if role == "HR":
+        return "\n".join(
+            [
+                "راهنمای منابع انسانی",
+                "• برنامه شیفت من و انتخاب ماه: مشاهده برنامه شخصی.",
+                "• مشاهده افراد یک روز و انتخاب تاریخ: مشاهده برنامه روزانه نیروها.",
+                "• درخواست‌ها: تأیید یا رد درخواست‌های فعال‌سازی.",
+                "• عملیات: گزارش درخواست‌ها و سلامت webhook.",
+                "• بارگذاری کارکنان و شیفت‌ها: از صفحه وب /admin/imports با پیش‌نمایش و تأیید نهایی.",
+                "• خروج از حساب: قطع اتصال حساب بله پس از تأیید.",
+            ]
+        )
+    if role == "ADMIN":
+        return "\n".join(
+            [
+                "راهنمای مدیر سیستم",
+                "• برنامه شیفت من، انتخاب ماه، مشاهده افراد و انتخاب تاریخ: مشاهده برنامه‌ها.",
+                "• درخواست‌ها: تأیید یا رد فعال‌سازی کاربران.",
+                "• عملیات: گزارش درخواست‌ها و لاگ‌های webhook.",
+                "• مدیریت داده: بارگذاری کارکنان و شیفت‌ها در /admin/imports.",
+                "• تولید خودکار برنامه: از API مدیریت شیفت و بر اساس الگو و Assignment.",
+                "• خروج از حساب: قطع اتصال حساب بله پس از تأیید.",
+            ]
+        )
+    return "\n".join(
+        [
+            "راهنمای کارمند",
+            "• برنامه من: خلاصه برنامه شما از ابتدای ماه تا امروز.",
+            "• ماه: انتخاب ماه قبل، ماه جاری یا ماه بعد.",
+            "• نمایش بیشتر/کمتر: باز یا خلاصه‌کردن جزئیات برنامه.",
+            "• بازگشت: برگشتن به منوی اصلی.",
+            "• خروج از حساب: قطع اتصال حساب بله پس از تأیید؛ اطلاعات برنامه حذف نمی‌شود.",
+        ]
+    )
 
 
 def build_access_requests_markup(requests: list) -> dict:
@@ -243,10 +392,23 @@ def resolve_user_message(db: Session, user: User, text: str) -> dict:
         }
 
     if raw_text in {"SELECT_DATE"} or compact in {"انتخابتاریخ", "تاریخ"}:
+        if not can_view_supervisor_schedule(user.role):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission denied")
         return {
             "type": "date_help",
-            "text": "تاریخ را انتخاب کنید یا YYYY-MM-DD بنویسید.",
-            "reply_markup": build_reply_markup(["امروز", "فردا", "پس‌فردا", "بازگشت"]),
+            "text": "یکی از روزهای زیر را انتخاب کنید.\nبرای روزهای دیگر، هفته را جابه‌جا کنید یا تاریخ را به شکل YYYY-MM-DD بفرستید.",
+            "reply_markup": build_date_picker_markup(),
+        }
+
+    if raw_text.startswith("DATE_WEEK:"):
+        if not can_view_supervisor_schedule(user.role):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="permission denied")
+        _, start_date_text = raw_text.split(":", 1)
+        start_date = parse_iso_date(start_date_text)
+        return {
+            "type": "date_help",
+            "text": "یکی از روزهای این هفته را انتخاب کنید.",
+            "reply_markup": build_date_picker_markup(start_date),
         }
 
     if raw_text in {"VIEW_ACCESS_REQUESTS"} or compact in {"درخواستها", "درخواست‌ها"}:
@@ -333,13 +495,9 @@ def resolve_user_message(db: Session, user: User, text: str) -> dict:
         }
 
     if raw_text in {"HELP"} or compact in {"راهنما", "help", "/help"}:
-        if user.role == "SUPERVISOR":
-            help_text = "برای مشاهده افراد روز، «افراد روز» را بزنید."
-        else:
-            help_text = "برای دیدن برنامه خود، «برنامه من» را بزنید."
         return {
             "type": "help",
-            "text": help_text,
+            "text": get_help_text(user.role),
             "reply_markup": build_back_markup(),
         }
 
@@ -380,7 +538,7 @@ def resolve_user_message(db: Session, user: User, text: str) -> dict:
             "type": "supervisor_schedule",
             "data": result,
             "detail_level": "full",
-            "reply_markup": build_full_markup(f"SHOW_LESS_SUPERVISOR:{date_text}"),
+            "reply_markup": build_supervisor_full_markup(target_date),
         }
 
     if raw_text.startswith("SHOW_LESS_SUPERVISOR:"):
@@ -394,7 +552,7 @@ def resolve_user_message(db: Session, user: User, text: str) -> dict:
             "type": "supervisor_schedule",
             "data": result,
             "detail_level": "summary",
-            "reply_markup": build_summary_markup(show_more_command),
+            "reply_markup": build_supervisor_schedule_markup(target_date, show_more_command),
         }
 
     quick_dates = {
@@ -416,7 +574,7 @@ def resolve_user_message(db: Session, user: User, text: str) -> dict:
             return {
                 "type": "date_help",
                 "text": "تاریخ معتبر نیست. نمونه درست: 2026-07-26",
-                "reply_markup": build_reply_markup(["امروز", "فردا", "پس‌فردا", "بازگشت"]),
+                "reply_markup": build_date_picker_markup(),
             }
         target_date = quick_dates.get(raw_text) or parsed_date or date.today()
         result = get_supervisor_schedule(db, user, target_date)
@@ -425,7 +583,7 @@ def resolve_user_message(db: Session, user: User, text: str) -> dict:
             "type": "supervisor_schedule",
             "data": result,
             "detail_level": "summary",
-            "reply_markup": build_summary_markup(show_more_command),
+            "reply_markup": build_supervisor_schedule_markup(target_date, show_more_command),
         }
 
     return {

@@ -347,11 +347,9 @@ def test_supervisor_date_help_has_reply_keyboard():
     result = bot_handler.resolve_user_message(None, SimpleNamespace(role="SUPERVISOR"), "انتخاب تاریخ")
 
     assert result["type"] == "date_help"
-    assert result["reply_markup"] == {
-        "inline_keyboard": [
-            [{"text": "امروز", "callback_data": "VIEW_DAY_TODAY"}],
-            [{"text": "فردا", "callback_data": "VIEW_DAY_TOMORROW"}],
-            [{"text": "پس‌فردا", "callback_data": "VIEW_DAY_AFTER_TOMORROW"}],
-            [{"text": "بازگشت", "callback_data": "BACK_MENU"}],
-        ]
-    }
+    buttons = result["reply_markup"]["inline_keyboard"]
+    assert len(buttons) == 9
+    assert buttons[0][0]["callback_data"].startswith("VIEW_DATE:")
+    assert buttons[7][0]["text"] == "هفته قبل"
+    assert buttons[7][1]["text"] == "هفته بعد"
+    assert buttons[8][0]["callback_data"] == "BACK_MENU"
