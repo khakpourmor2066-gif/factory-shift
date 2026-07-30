@@ -8,6 +8,8 @@
   Supervisors remain limited to direct reports.
 - Replaced manual Bale-issued web tokens with five-minute, one-time login links
   that establish revocable eight-hour secure browser sessions.
+- Removed token fields from management forms and protected the form pages
+  themselves with HR/Admin browser-session authorization.
 - Expanded Bale access-request review with mobile, personnel code, employee,
   role, attempt count, and explicit identity-match status.
 - Restricted activation-request review to HR/Admin and blocked approval unless

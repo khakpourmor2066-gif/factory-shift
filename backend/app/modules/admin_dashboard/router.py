@@ -48,6 +48,11 @@ def admin_dashboard_endpoint(
         if current_user.role in {"HR", "ADMIN"}
         else ""
     )
+    import_link = (
+        '<p><a href="/admin/imports">ورود کارکنان و برنامه شیفت</a></p>'
+        if current_user.role in {"HR", "ADMIN"}
+        else ""
+    )
 
     html = f"""
     <html lang="fa" dir="rtl">
@@ -67,7 +72,7 @@ def admin_dashboard_endpoint(
         <form method="post" action="/admin/session/logout">
           <button type="submit">خروج از پیشخوان وب</button>
         </form>
-        <p><a href="/admin/imports">ورود کارکنان و برنامه شیفت</a></p>
+        {import_link}
         {schedule_generator_link}
         <div class="grid">
           <div class="card">
@@ -112,7 +117,10 @@ def admin_dashboard_endpoint(
 
 
 @router.get("/imports", response_class=HTMLResponse, include_in_schema=False)
-def import_dashboard_endpoint():
+def import_dashboard_endpoint(
+    current_user: User = Depends(get_current_user),
+):
+    require_roles(current_user, {"ADMIN", "HR"})
     html = """
     <html lang="fa" dir="rtl">
       <head>
@@ -136,10 +144,8 @@ def import_dashboard_endpoint():
       <body>
         <main>
           <h1>ورود کارکنان و برنامه شیفت</h1>
-          <p class="hint">اگر از لینک امن ربات وارد شده‌اید، نیازی به واردکردن توکن نیست.</p>
+          <p class="hint">ورود امن شما از طریق ربات بله تأیید شده است.</p>
           <section class="card">
-            <label for="token">Bearer Token دستی (اختیاری)</label>
-            <input id="token" type="password" autocomplete="off" />
             <label for="importType">نوع فایل</label>
             <select id="importType">
               <option value="employees">کارکنان منابع انسانی</option>
@@ -161,7 +167,6 @@ def import_dashboard_endpoint():
           </section>
         </main>
         <script>
-          const tokenInput = document.getElementById("token");
           const typeInput = document.getElementById("importType");
           const fileInput = document.getElementById("file");
           const result = document.getElementById("result");
@@ -172,8 +177,7 @@ def import_dashboard_endpoint():
           let currentJobId = null;
 
           function headers() {
-            const token = tokenInput.value.trim();
-            return token ? { "Authorization": `Bearer ${token}` } : {};
+            return {};
           }
 
           function show(payload) {
@@ -275,7 +279,10 @@ def import_dashboard_endpoint():
 
 
 @router.get("/schedule-generator", response_class=HTMLResponse, include_in_schema=False)
-def schedule_generator_dashboard_endpoint():
+def schedule_generator_dashboard_endpoint(
+    current_user: User = Depends(get_current_user),
+):
+    require_roles(current_user, {"ADMIN", "HR"})
     html = """
     <html lang="fa" dir="rtl">
       <head>
@@ -309,10 +316,8 @@ def schedule_generator_dashboard_endpoint():
         <main>
           <p><a href="/admin/dashboard">بازگشت به داشبورد</a> · <a href="/admin/imports">ورود فایل</a></p>
           <h1>تولید و انتشار برنامه شیفت</h1>
-          <p class="hint">اگر از لینک امن ربات وارد شده‌اید، نشست مرورگر به‌صورت خودکار استفاده می‌شود.</p>
+          <p class="hint">ورود امن شما از طریق ربات بله تأیید شده است.</p>
           <section class="card">
-            <label for="token">Bearer Token دستی (اختیاری)</label>
-            <input id="token" type="password" autocomplete="off" />
             <button class="primary" id="loadOptions">دریافت کارکنان و الگوها</button>
           </section>
           <section class="card" id="workflow" hidden>
@@ -357,7 +362,6 @@ def schedule_generator_dashboard_endpoint():
           </section>
         </main>
         <script>
-          const tokenInput = document.getElementById("token");
           const employeeInput = document.getElementById("employee");
           const assignmentInput = document.getElementById("assignment");
           const fromDateInput = document.getElementById("fromDate");
@@ -371,10 +375,7 @@ def schedule_generator_dashboard_endpoint():
           let currentJobId = null;
 
           function headers() {
-            const headers = {"Content-Type": "application/json"};
-            const token = tokenInput.value.trim();
-            if (token) headers["Authorization"] = `Bearer ${token}`;
-            return headers;
+            return {"Content-Type": "application/json"};
           }
 
           function setDefaultDates() {
